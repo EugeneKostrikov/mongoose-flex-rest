@@ -5,6 +5,14 @@ var async = require('async');
 
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
+var user = {
+  acl: {
+    create: 0,
+    read: 0,
+    update: 0,
+    delete: 0
+  }
+};
 
 describe('REST plugin', function(){
   describe('Plugin configs', function(){
@@ -43,18 +51,20 @@ describe('REST plugin', function(){
       connection = mongoose.connect('mongodb://localhost:27017/test', function(err){
         should.not.exist(err);
         schema = new Schema({
-          str: String,
-          date: Date,
-          num: Number,
-          arr: [],
-          obj: {},
+          str: {type: String, acl: {read: 0, write: 0}},
+          date: {type: Date, acl: {read: 0, write: 0}},
+          num: {type: Number, acl: {read: 0, write: 0}},
+          arr: [{type: Number, acl: {read: 0, write: 0}}],
+          obj: {
+            one: {type: String, acl: {read: 0, write: 0}}
+          },
           embedded: [{
-            title: String,
-            array: []
+            title: {type: String, acl: {read: 0, write: 0}},
+            array: [{type: Number, acl: {read: 0, write: 0}}]
           }],
-          ref: {type: Schema.Types.ObjectId, ref: 'model'}
+          ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, write: 0}}
         }, {collection: 'test_instances'});
-        schema.plugin(plugin, {});
+        schema.plugin(plugin, {create: 0, delete: 0});
         model = connection.model('model', schema);
         done();
       });
@@ -69,12 +79,12 @@ describe('REST plugin', function(){
         loadSomeData(done);
       });
       it('should return query if no callback passed', function(done){
-        var promise = model.rest_read({}, {});
+        var promise = model.rest_read({}, {user: user});
         should.exist(promise.exec);
         done();
       });
       it('should execute when provided with a callback', function(done){
-        model.rest_read({}, {}, function(err, results){
+        model.rest_read({}, {user: user}, function(err, results){
           should.not.exist(err);
           should.exist(results);
           done();
@@ -84,7 +94,7 @@ describe('REST plugin', function(){
         var query = {
           str: 'one'
         };
-        model.rest_read(query, {}, function(err, docs){
+        model.rest_read(query, {user: user}, function(err, docs){
           should.not.exist(err);
           docs.should.be.an.Array;
           (docs.length).should.equal(1);
@@ -102,7 +112,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_read(q, {}, function(err, docs){
+          model.rest_read(q, {user: user}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(2);
             done();
@@ -112,7 +122,7 @@ describe('REST plugin', function(){
           var q = {
             date: 1
           };
-          model.rest_read(q, {}, function(err, docs){
+          model.rest_read(q, {user: user}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
@@ -125,7 +135,7 @@ describe('REST plugin', function(){
               _$lte: 2
             }
           };
-          model.rest_read(q, {}, function(err, docs){
+          model.rest_read(q, {user: user}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(2);
             done();
@@ -137,7 +147,7 @@ describe('REST plugin', function(){
               one: 'one'
             }
           };
-          model.rest_read(q, {}, function(err, docs){
+          model.rest_read(q, {user: user}, function(err, docs){
             should.not.exist(err);
             (docs[0].obj.one).should.equal('one');
             (docs.length).should.equal(1);
@@ -150,7 +160,7 @@ describe('REST plugin', function(){
               _$size: 3
             }
           };
-          model.rest_read(q, {}, function(err, docs){
+          model.rest_read(q, {user: user}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
@@ -164,7 +174,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_read(q, {}, function(err, docs){
+          model.rest_read(q, {user: user}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
@@ -194,7 +204,8 @@ describe('REST plugin', function(){
               str: 'referenced'
             };
             var opts = {
-              populate: 'ref'
+              populate: 'ref',
+              user: user
             };
             model.rest_read(q, opts, function(err, docs){
               should.not.exist(err);
@@ -207,6 +218,7 @@ describe('REST plugin', function(){
               str: 'referenced'
             };
             var opts = {
+              user: user,
               populate: JSON.stringify({
                 path: 'ref',
                 select: 'num'
@@ -224,6 +236,7 @@ describe('REST plugin', function(){
               str: 'referenced'
             };
             var opts = {
+              user: user,
               populate: JSON.stringify([
                 {path: 'ref', select: 'str'},
                 {path: 'undefined'}
@@ -241,6 +254,11 @@ describe('REST plugin', function(){
     });
     describe('update', function(){
       //Parsers tests prove that document is modified.
+      describe('working with arrays', function(){
+        it('should have working push method', function(){
+
+        });
+      });
     });
     after(function(){
       connection.connection.db.dropCollection('test_instances');

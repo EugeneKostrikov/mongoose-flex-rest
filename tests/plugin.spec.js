@@ -9,7 +9,7 @@ var user = {
   acl: {
     create: 0,
     read: 0,
-    update: 0,
+    update: 1,
     delete: 0
   }
 };
@@ -55,12 +55,14 @@ describe('REST plugin', function(){
           date: {type: Date, acl: {read: 0, write: 0}},
           num: {type: Number, acl: {read: 0, write: 0}},
           arr: [{type: Number, acl: {read: 0, write: 0}}],
+          arrayOfStrings: [{type: String, acl: {read: 0, write: 0}}],
           obj: {
             one: {type: String, acl: {read: 0, write: 0}}
           },
           embedded: [{
             title: {type: String, acl: {read: 0, write: 0}},
-            array: [{type: Number, acl: {read: 0, write: 0}}]
+            array: [{type: Number, acl: {read: 0, write: 0}}],
+            num: {type: Number, acl: {read:0, write: 0}}
           }],
           ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, write: 0}}
         }, {collection: 'test_instances'});
@@ -251,65 +253,270 @@ describe('REST plugin', function(){
           });
         });
       });
+      after(function(){
+        connection.connection.db.dropCollection('test_instances');
+      });
+      //helpers
+      function loadSomeData(done){
+        var docs = [];
+        docs[0] = new model({
+          str: 'one',
+          date: new Date(1),
+          num: 1,
+          arr: [1],
+          obj: {
+            one: 'one'
+          },
+          embedded: [
+            {title: 'first', array: [1]}
+          ]
+        });
+        docs[1] = new model({
+          str: 'two',
+          date: new Date(2),
+          num: 2,
+          arr: [2,2],
+          obj:{
+            two: 'two'
+          },
+          embedded: [
+            {title: 'second', array: [2,2]}
+          ]
+        });
+        docs[2] = new model({
+          str: 'three',
+          date: new Date(3),
+          num: 3,
+          arr: [3,3,3],
+          obj: {
+            three: 'three'
+          },
+          embedded: [
+            {title: 'third', array: [3,3,3]}
+          ]
+        });
+        async.each(docs, function(doc, cb){
+          doc.save(function(err){
+            should.not.exist(err);
+            cb();
+          })
+        }, function(){
+          done();
+        });
+      }
     });
     describe('update', function(){
-      //Parsers tests prove that document is modified.
-      describe('working with arrays', function(){
-        it('should have working push method', function(){
-
+      beforeEach(function(done){
+        var sampleDoc = new model({
+          str: 'one',
+          date: new Date(1),
+          num: 1,
+          arr: [1],
+          arrayOfStrings: ['one', 'two', 'three'],
+          obj: {
+            one: 'one'
+          },
+          embedded: [
+            {title: 'first', array: [1], num: 0}
+          ]
         });
+        sampleDoc.save(function(err){
+          should.not.exist(err);
+          done();
+        });
+      });
+      describe('general methods', function(){
+        it('should have working $set method', function(done){
+          var cmd = {
+            _$set: {
+              str: 'changed',
+              arrayOfStrings: ['erased']
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, upd){
+            should.not.exist(err);
+            (upd.length).should.equal(1);
+            (upd[0].str).should.equal('changed');
+            (upd[0].arrayOfStrings.length).should.equal(1);
+            (upd[0].arrayOfStrings[0]).should.equal('erased');
+            //(upd[0].embedded[0].array[0]).should.equal(0);
+            //(upd[0].embedded[0].array.length).should.equal(1);
+            done();
+          });
+        });
+        it('$set should work with embedded documents', function(done){
+          var cmd = {
+            _$set:{
+              embedded: {
+                _$where_: {
+                  title: 'first'
+                },
+                _$do_: {
+                  array: [0]
+                }
+              }
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, upd){
+            should.not.exist(err);
+            (upd[0].embedded[0].array[0]).should.equal(0);
+            (upd[0].embedded[0].array.length).should.equal(1);
+            done();
+          });
+        });
+      });
+      describe('working with numbers', function(){
+        it('should have $inc working', function(done){
+          var cmd = {
+            _$inc: {
+              num: 1
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, upd){
+            should.not.exist(err);
+            (upd[0].num).should.equal(2);
+            done();
+          });
+        });
+/*
+        it('$inc should work with arrays', function(done){
+          var cmd = {
+            _$inc:{
+              arr:{
+                _$index_: 0,
+                _$do_: 2
+              }
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, upd){
+            should.not.exist(err);
+            (upd[0].arr[0]).should.equal(3);
+            done();
+          });
+        });
+        it('$inc should work with arrays of documents', function(done){
+          var cmd = {
+            _$inc:{
+              embedded:{
+                _$where_:{
+                  title: 'first'
+                },
+                _$do_:{
+                  num: 3
+                }
+              }
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, upd){
+            should.not.exist(err);
+            (upd[0].embedded[0].num).should.equal(3);
+            done();
+          });
+        });
+*/
+      });
+      describe('working with arrays', function(){
+        it('should have working push method', function(done){
+          var q = {};
+          var cmd = {
+            _$push: {
+              arr: [2,3,4],
+              embedded:{
+                _$where_:{
+                  title: 'first'
+                },
+                _$do_: {
+                  array: [2]
+                }
+              }
+            }
+          };
+          model.rest_update(q, cmd, {user: user}, function(err, updated){
+            should.not.exist(err);
+            (updated[0].arr.length).should.equal(4);
+            (updated[0].arr[2]).should.equal(3);
+            (updated[0].embedded[0].array.length).should.equal(2);
+            done();
+          });
+        });
+        it('should have working addToSet method', function(done){
+          var q = {};
+          var cmd = {
+            _$addToSet:{
+              arr: [1,2]
+            }
+          };
+          model.rest_update(q, cmd, {user: user}, function(err, updated){
+            should.not.exist(err);
+            (updated[0].arr.length).should.equal(2);
+            done();
+          });
+        });
+        it('_$addToSet should work with embedded documents', function(done){
+          var cmd = {
+            _$addToSet:{
+              embedded:{
+                _$where_:{
+                  title: 'first'
+                },
+                _$do_:{
+                  array: [1,2]
+                }
+              }
+            }
+          };
+          model.rest_update({}, cmd, {user:user}, function(err, updated){
+            should.not.exist(err);
+            (updated[0].embedded[0].array.length).should.equal(2);
+            done();
+          });
+        });
+        it('should have working $pull method', function(done){
+          var cmd = {
+            _$pull:{
+              arr: [1]
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, upd){
+            should.not.exist(err);
+            (upd[0].arr.length).should.equal(0);
+            done();
+          });
+        });
+        it('$pullAll method using array syntax', function(done){
+          var cmd = {
+            _$pull:{
+              arrayOfStrings: ['one', 'two']
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, upd){
+            should.not.exist(err);
+            (upd[0].arrayOfStrings.length).should.equal(1);
+            (upd[0].arrayOfStrings[0]).should.equal('three');
+            done();
+          });
+        });
+        it('BUGFIX: string is pushed once', function(done){
+          var cmd = {
+            _$push:{
+              arrayOfStrings: ['string']
+            }
+          };
+          model.rest_update({}, cmd, {user: user}, function(err, updated){
+            should.not.exist(err);
+            (updated[0].arrayOfStrings.length).should.equal(4);
+            (updated[0].arrayOfStrings[3]).should.equal('string');
+            done();
+          });
+        });
+      });
+      afterEach(function(){
+        connection.connection.db.dropCollection('test_instances');
       });
     });
     after(function(){
       connection.connection.db.dropCollection('test_instances');
     });
-    //helpers
-    function loadSomeData(done){
-      var docs = [];
-      docs[0] = new model({
-        str: 'one',
-        date: new Date(1),
-        num: 1,
-        arr: [1],
-        obj: {
-          one: 'one'
-        },
-        embedded: [
-          {title: 'first', array: [1]}
-        ]
-      });
-      docs[1] = new model({
-        str: 'two',
-        date: new Date(2),
-        num: 2,
-        arr: [2,2],
-        obj:{
-          two: 'two'
-        },
-        embedded: [
-          {title: 'second', array: [2,2]}
-        ]
-      });
-      docs[2] = new model({
-        str: 'three',
-        date: new Date(3),
-        num: 3,
-        arr: [3,3,3],
-        obj: {
-          three: 'three'
-        },
-        embedded: [
-          {title: 'third', array: [3,3,3]}
-        ]
-      });
-      async.each(docs, function(doc, cb){
-        doc.save(function(err){
-          should.not.exist(err);
-          cb();
-        })
-      }, function(){
-        done();
-      });
-    }
+
   });
 });

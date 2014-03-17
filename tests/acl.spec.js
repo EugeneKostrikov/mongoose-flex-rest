@@ -99,7 +99,7 @@ describe('Access control', function(){
   describe('performance', function(){
     it('complex read parsing', function(){
       var start = Date.now();
-      for(var i = 10000; i > 0; i--){
+      for(var i = 1000; i > 0; i--){
         var q = {
           array: {
             $in: ['something']
@@ -117,12 +117,12 @@ describe('Access control', function(){
         acl.validateRead(q, user, model);
       }
       var end = Date.now();
-      console.log('complex read acl parser: ', 10000 / (end - start), 'ops per second');
+      console.log('complex read acl parser: ', 1000 / (end - start), 'ops per second');
 
     });
     it('complex update command parsing', function(){
       var start = Date.now();
-      for(var i = 10000; i > 0; i--){
+      for(var i = 1000; i > 0; i--){
         var cmd = {
           $set: {
             path: 'new value'
@@ -150,7 +150,7 @@ describe('Access control', function(){
       }
 
       var end = Date.now();
-      console.log('complex update acl parser: ', 10000 / (end - start), 'ops per second');
+      console.log('complex update acl parser: ', 1000 / (end - start), 'ops per second');
 
     });
   });

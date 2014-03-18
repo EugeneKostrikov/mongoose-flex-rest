@@ -1,4 +1,4 @@
-var acl = require('../lib/acl');
+var accessControl = require('../lib/acl');
 var should = require('should');
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
@@ -19,15 +19,13 @@ var schema = new Schema({
   aclIsNotDefined: {type: String}
 });
 var model = mongoose.model('acl_model', schema);
-acl.createRules(schema, {create: 1, delete: 1});
+accessControl.createRules(schema, {create: 1, delete: 1});
 
-var user = {
-  acl: {
-    read: 1,
-    create: 2,
-    update: 2,
-    delete: 2
-  }
+var acl = {
+  read: 1,
+  create: 2,
+  update: 2,
+  delete: 2
 };
 
 
@@ -49,9 +47,9 @@ describe('Access control', function(){
           }
         }
       };
-      (acl.validateRead(q, user, model)).should.not.be.ok;
-      user.acl.read = 10;
-      (acl.validateRead(q, user, model)).should.be.ok;
+      (accessControl.validateRead(q, acl, model)).should.not.be.ok;
+      acl.read = 10;
+      (accessControl.validateRead(q, acl, model)).should.be.ok;
     });
     it('should properly validate update query', function(){
       var cmd = {
@@ -77,9 +75,9 @@ describe('Access control', function(){
           }
         }
       };
-      (acl.validateUpdate(cmd, user, model)).should.not.be.ok;
-      user.acl.update = 10;
-      (acl.validateUpdate(cmd, user, model)).should.be.ok;
+      (accessControl.validateUpdate(cmd, acl, model)).should.not.be.ok;
+      acl.update = 10;
+      (accessControl.validateUpdate(cmd, acl, model)).should.be.ok;
     });
     it('should properly validate selected values', function(){
       //consumes options.select value + populate.select values
@@ -101,7 +99,7 @@ describe('Access control', function(){
           $in: 'something'
         }
       };
-      acl.validateRead(q, user, model);
+      accessControl.validateRead(q, acl, model);
       (q._id).should.equal(objectId);
       (q.embedded.path).should.equal('value');
       (q.arrayOfDocs[0].path).should.equal('value');
@@ -113,13 +111,13 @@ describe('Access control', function(){
       var q = {
         _id: mongoose.Types.ObjectId()
       };
-      (acl.validateRead(q, user, model)).should.be.ok;
+      (accessControl.validateRead(q, acl, model)).should.be.ok;
       done();
     });
   });
   describe('indexing', function(){
     it('should generate proper map', function(done){
-      var map = acl.createRules(schema, {create: 1, delete: 1});
+      var map = accessControl.createRules(schema, {create: 1, delete: 1});
       (map.$1.read).should.be.an.Array;
       (map.$1.read.indexOf('path')).should.not.equal(-1);
       (map.$1.read.indexOf('embedded.array')).should.not.equal(-1);
@@ -144,7 +142,7 @@ describe('Access control', function(){
             }
           }
         };
-        acl.validateRead(q, user, model);
+        accessControl.validateRead(q, acl, model);
       }
       var end = Date.now();
       console.log('complex read acl parser: ', 1000 / (end - start), 'ops per second');
@@ -176,7 +174,7 @@ describe('Access control', function(){
             }
           }
         };
-        acl.validateUpdate(cmd, user, model);
+        accessControl.validateUpdate(cmd, acl, model);
       }
 
       var end = Date.now();

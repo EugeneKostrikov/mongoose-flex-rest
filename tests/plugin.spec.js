@@ -5,13 +5,11 @@ var async = require('async');
 
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var user = {
-  acl: {
-    create: 0,
-    read: 0,
-    update: 1,
-    delete: 0
-  }
+var acl = {
+  create: 0,
+  read: 0,
+  update: 1,
+  delete: 0
 };
 
 describe('REST plugin', function(){
@@ -81,12 +79,12 @@ describe('REST plugin', function(){
         loadSomeData(done);
       });
       it('should return query if no callback passed', function(done){
-        var promise = model.rest_read({}, {user: user});
+        var promise = model.rest_read({}, {acl: acl});
         should.exist(promise.exec);
         done();
       });
       it('should execute when provided with a callback', function(done){
-        model.rest_read({}, {user: user}, function(err, results){
+        model.rest_read({}, {acl: acl}, function(err, results){
           should.not.exist(err);
           should.exist(results);
           done();
@@ -96,7 +94,7 @@ describe('REST plugin', function(){
         var query = {
           str: 'one'
         };
-        model.rest_read(query, {user: user}, function(err, docs){
+        model.rest_read(query, {acl: acl}, function(err, docs){
           should.not.exist(err);
           docs.should.be.an.Array;
           (docs.length).should.equal(1);
@@ -114,7 +112,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_read(q, {user: user}, function(err, docs){
+          model.rest_read(q, {acl: acl}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(2);
             done();
@@ -124,7 +122,7 @@ describe('REST plugin', function(){
           var q = {
             date: 1
           };
-          model.rest_read(q, {user: user}, function(err, docs){
+          model.rest_read(q, {acl: acl}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
@@ -137,7 +135,7 @@ describe('REST plugin', function(){
               _$lte: 2
             }
           };
-          model.rest_read(q, {user: user}, function(err, docs){
+          model.rest_read(q, {acl: acl}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(2);
             done();
@@ -149,7 +147,7 @@ describe('REST plugin', function(){
               one: 'one'
             }
           };
-          model.rest_read(q, {user: user}, function(err, docs){
+          model.rest_read(q, {acl: acl}, function(err, docs){
             should.not.exist(err);
             (docs[0].obj.one).should.equal('one');
             (docs.length).should.equal(1);
@@ -162,7 +160,7 @@ describe('REST plugin', function(){
               _$size: 3
             }
           };
-          model.rest_read(q, {user: user}, function(err, docs){
+          model.rest_read(q, {acl: acl}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
@@ -176,7 +174,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_read(q, {user: user}, function(err, docs){
+          model.rest_read(q, {acl: acl}, function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
@@ -207,7 +205,7 @@ describe('REST plugin', function(){
             };
             var opts = {
               populate: 'ref',
-              user: user
+              acl: acl
             };
             model.rest_read(q, opts, function(err, docs){
               should.not.exist(err);
@@ -220,7 +218,7 @@ describe('REST plugin', function(){
               str: 'referenced'
             };
             var opts = {
-              user: user,
+              acl: acl,
               populate: JSON.stringify({
                 path: 'ref',
                 select: 'num'
@@ -238,7 +236,7 @@ describe('REST plugin', function(){
               str: 'referenced'
             };
             var opts = {
-              user: user,
+              acl: acl,
               populate: JSON.stringify([
                 {path: 'ref', select: 'str'},
                 {path: 'undefined'}
@@ -333,7 +331,7 @@ describe('REST plugin', function(){
               arrayOfStrings: ['erased']
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, upd){
+          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
             should.not.exist(err);
             (upd.length).should.equal(1);
             (upd[0].str).should.equal('changed');
@@ -357,7 +355,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, upd){
+          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
             should.not.exist(err);
             (upd[0].embedded[0].array[0]).should.equal(0);
             (upd[0].embedded[0].array.length).should.equal(1);
@@ -372,7 +370,7 @@ describe('REST plugin', function(){
               num: 1
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, upd){
+          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
             should.not.exist(err);
             (upd[0].num).should.equal(2);
             done();
@@ -388,7 +386,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, upd){
+          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
             should.not.exist(err);
             (upd[0].arr[0]).should.equal(3);
             done();
@@ -407,7 +405,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, upd){
+          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
             should.not.exist(err);
             (upd[0].embedded[0].num).should.equal(3);
             done();
@@ -431,7 +429,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update(q, cmd, {user: user}, function(err, updated){
+          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(4);
             (updated[0].arr[2]).should.equal(3);
@@ -446,7 +444,7 @@ describe('REST plugin', function(){
               arr: [1,2]
             }
           };
-          model.rest_update(q, cmd, {user: user}, function(err, updated){
+          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(2);
             done();
@@ -465,7 +463,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {user:user}, function(err, updated){
+          model.rest_update({}, cmd, {acl:acl}, function(err, updated){
             should.not.exist(err);
             (updated[0].embedded[0].array.length).should.equal(2);
             done();
@@ -477,7 +475,7 @@ describe('REST plugin', function(){
               arr: [1]
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, upd){
+          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
             should.not.exist(err);
             (upd[0].arr.length).should.equal(0);
             done();
@@ -489,7 +487,7 @@ describe('REST plugin', function(){
               arrayOfStrings: ['one', 'two']
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, upd){
+          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
             should.not.exist(err);
             (upd[0].arrayOfStrings.length).should.equal(1);
             (upd[0].arrayOfStrings[0]).should.equal('three');
@@ -502,7 +500,7 @@ describe('REST plugin', function(){
               arrayOfStrings: ['string']
             }
           };
-          model.rest_update({}, cmd, {user: user}, function(err, updated){
+          model.rest_update({}, cmd, {acl: acl}, function(err, updated){
             should.not.exist(err);
             (updated[0].arrayOfStrings.length).should.equal(4);
             (updated[0].arrayOfStrings[3]).should.equal('string');

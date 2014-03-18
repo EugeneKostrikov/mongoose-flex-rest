@@ -154,6 +154,18 @@ describe('REST plugin', function(){
             done();
           });
         });
+        it('should work with arrays', function(done){
+          var q = {
+            arr: {
+              _$all: [1,2]
+            }
+          };
+          model.rest_read(q, {acl: acl}, function(err, docs){
+            should.not.exist(err);  
+            (docs.length).should.equal(2);
+            done();
+          });
+        });
         it('should have $size port', function(done){
           var q = {
             arr: {
@@ -273,7 +285,7 @@ describe('REST plugin', function(){
           str: 'two',
           date: new Date(2),
           num: 2,
-          arr: [2,2],
+          arr: [1,2],
           obj:{
             two: 'two'
           },
@@ -285,7 +297,7 @@ describe('REST plugin', function(){
           str: 'three',
           date: new Date(3),
           num: 3,
-          arr: [3,3,3],
+          arr: [1,2,3],
           obj: {
             three: 'three'
           },
@@ -414,7 +426,7 @@ describe('REST plugin', function(){
 */
       });
       describe('working with arrays', function(){
-        it('should have working push method', function(done){
+        it('should have working $push method', function(done){
           var q = {};
           var cmd = {
             _$push: {
@@ -437,7 +449,20 @@ describe('REST plugin', function(){
             done();
           });
         });
-        it('should have working addToSet method', function(done){
+        it('$push acts as $pushAll', function(done){
+          var q = {};
+          var cmd = {
+            _$push: {
+              arr: [2,3,4]
+            }
+          };
+          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
+            should.not.exist(err);
+            (updated[0].arr.length).should.equal(4);
+            done();
+          });
+        });
+        it('should have working $addToSet method', function(done){
           var q = {};
           var cmd = {
             _$addToSet:{
@@ -494,7 +519,7 @@ describe('REST plugin', function(){
             done();
           });
         });
-        it('BUGFIX: string is pushed once', function(done){
+        it('bugfix prove: string is pushed once', function(done){
           var cmd = {
             _$push:{
               arrayOfStrings: ['string']

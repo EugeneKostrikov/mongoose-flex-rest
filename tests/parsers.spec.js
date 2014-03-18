@@ -22,7 +22,7 @@ describe('Module parsers', function(){
           }
         },
         array:{
-          _id: 'SomeObjectId'
+          _id: mongoose.Types.ObjectId()
         },
         score: {
           _$gt: 3,

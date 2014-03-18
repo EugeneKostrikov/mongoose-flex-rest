@@ -86,6 +86,36 @@ describe('Access control', function(){
       //May be implement via middleware? pre/post init.
 
     });
+    it('should not change initial query', function(done){
+      var objectId = mongoose.Types.ObjectId();
+      var q = {
+        _id: objectId,
+        embedded:{
+          path: 'value'
+        },
+        arrayOfDocs: [{
+          path: 'value',
+          _id: objectId
+        }],
+        array:{
+          $in: 'something'
+        }
+      };
+      acl.validateRead(q, user, model);
+      (q._id).should.equal(objectId);
+      (q.embedded.path).should.equal('value');
+      (q.arrayOfDocs[0].path).should.equal('value');
+      (q.arrayOfDocs[0]._id).should.equal(objectId);
+      (q.array.$in).should.equal('something');
+      done();
+    });
+    it('should work with ObjectIds', function(done){
+      var q = {
+        _id: mongoose.Types.ObjectId()
+      };
+      (acl.validateRead(q, user, model)).should.be.ok;
+      done();
+    });
   });
   describe('indexing', function(){
     it('should generate proper map', function(done){

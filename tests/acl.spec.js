@@ -65,12 +65,6 @@ describe('Access control', function(){
       (accessControl.validateRead(q, acl, model)).should.be.ok;
       done();
     });
-    /*it('should augment query with defaults', function(){
-      var q = {};
-      var ok = accessControl.validateRead(q, acl, model);
-      (ok).should.equal(false);
-      (q.path).should.equal('set from context');
-    });*/
     it('should properly validate update query', function(){
       var cmd = {
         $set: {

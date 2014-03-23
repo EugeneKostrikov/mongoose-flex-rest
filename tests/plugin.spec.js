@@ -537,6 +537,35 @@ describe('REST plugin', function(){
         connection.connection.db.dropCollection('test_instances');
       });
     });
+    describe('delete', function(){
+      beforeEach(function(done){
+        var doc = new model({
+          str: 'some string'
+        });
+        doc.save(function(err){
+          should.not.exist(err);
+          done();
+        });
+      });
+      it('should deny access if user has not enough acl power', function(done){
+        model.findOne({}, function(err, doc){
+          should.not.exist(err);
+          model.rest_delete(doc._id.toString(), null, function(err){
+            (err.message).should.equal('Access denied');
+            done();
+          });
+        });
+      });
+      it('should have working delete method', function(done){
+        model.findOne({}, function(err, doc){
+          should.not.exist(err);
+          model.rest_delete(doc._id.toString(), {delete: 10}, function(err){
+            should.not.exist(err);
+            done();
+          });
+        });
+      });
+    });
     after(function(){
       connection.connection.db.dropCollection('test_instances');
     });

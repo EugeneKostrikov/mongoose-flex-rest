@@ -45,16 +45,12 @@ describe('Module parsers', function(){
       }
     });
     it('should have valid query for mongoose when rewritten', function(){
-      describe('regex', function(){
-        var q = parsers.query(sampleQuery);
-        (q.title.$regex).should.be.an.instanceof(RegExp);
-      });
-      describe('dates', function(){
-        var q = parsers.query(sampleQuery);
-        (q.date).should.be.an.Object;
-        (q.date.$gte).should.be.an.instanceof(Date);
-        (q.date.$lt).should.be.an.instanceof(Date);
-      });
+      var q = parsers.query(sampleQuery);
+      (q.title.$regex).should.be.an.instanceof(RegExp);
+      q = parsers.query(sampleQuery);
+      (q.date).should.be.an.Object;
+      (q.date.$gte).should.be.an.instanceof(Date);
+      (q.date.$lt).should.be.an.instanceof(Date);
     });
   });
   describe('update command parser', function(){
@@ -320,7 +316,7 @@ describe('Module parsers', function(){
           parsers.query(sampleQuery);
         }
         var end = Date.now();
-        console.log('complex read query parser: ', 10000 / (end - start), 'ops per second');
+        console.log('complex read query parser: ', (10000 / (end - start)) * 1000, 'ops per second\n');
       });
       it('simple query', function(){
         var start = Date.now();
@@ -328,7 +324,7 @@ describe('Module parsers', function(){
           parsers.query({_id: 1230});
         }
         var end = Date.now();
-        console.log('simple read query parser: ',  10000 / (end - start), 'ops per second');
+        console.log('simple read query parser: ',  (10000 / (end - start)) * 1000, 'ops per second\n');
       });
     });
   });

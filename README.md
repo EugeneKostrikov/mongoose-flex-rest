@@ -48,6 +48,8 @@ _Well... Not really available yet. I will publish this as soon as i prove that i
 ## Install:
     npm install mongoose-flex-rest
 
+> See this gist for the sample Schema definition //TODO create gist
+
 ### Read:
   First of all, remember that query syntax corresponds mongodb's one.
   There are only two edge cases when you should write something other that mongodb's query
@@ -87,7 +89,6 @@ _Well... Not really available yet. I will publish this as soon as i prove that i
 
 ### Write:
   Write commands are a bit more complex.
-  See this gist for Schema definition //TODO create gist
 
   When you work with plain documents they completely reflect Mongo's operators, e.g.
   ```js

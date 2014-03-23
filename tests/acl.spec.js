@@ -4,17 +4,17 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var schema = new Schema({
-  path: {type: String, acl:{read: 1, write: 2}},
+  path: {type: String, acl:{read: 0, write: 2}},
   embedded:{
     path: {type: String, acl:{read: 0, write: 1}},
     array: [{type: String, acl:{read: 1, write: 1}}]
   },
-  array: [{type: String, acl:{create: 1, read: 2, update: 3, delete: 4}}],
+  array: [{type: String, acl:{update: 3, delete: 4}}],
   arrayOfDocs: [{
     path: {type: String, acl:{create: 3, read: 1, update: 3, delete:3}},
     array: {type: String, acl:{read: 0, write: 0}}
   }],
-  aclIsNotDefinedObject: {},
+  aclIsNotDefinedObject: {type: Schema.Types.Mixed},
   aclIsNotDefinedArray: [{type: String}],
   aclIsNotDefined: {type: String}
 });
@@ -51,6 +51,26 @@ describe('Access control', function(){
       acl.read = 10;
       (accessControl.validateRead(q, acl, model)).should.be.ok;
     });
+    it('should pass 0-allowed queries', function(done){
+      var q = {
+        embedded: {
+          path: 'something'
+        },
+        arrayOfDocs:{
+          _$elemMatch:{
+            array: 'something'
+          }
+        }
+      };
+      (accessControl.validateRead(q, acl, model)).should.be.ok;
+      done();
+    });
+    /*it('should augment query with defaults', function(){
+      var q = {};
+      var ok = accessControl.validateRead(q, acl, model);
+      (ok).should.equal(false);
+      (q.path).should.equal('set from context');
+    });*/
     it('should properly validate update query', function(){
       var cmd = {
         $set: {
@@ -82,7 +102,33 @@ describe('Access control', function(){
     it('should properly validate selected values', function(){
       //consumes options.select value + populate.select values
       //May be implement via middleware? pre/post init.
-
+      var select = 'path embedded.path embedded.array';
+      acl.read = 0;
+      (accessControl.validateSelect(select, acl, model)).should.not.be.ok;
+      acl.read = 1;
+      (accessControl.validateSelect(select, acl, model)).should.be.ok;
+    });
+    it('should return allowed path', function(done){
+      acl.read = 0;
+      var select = accessControl.getAllowed(acl, model);
+      var test = select.split(' ');
+      //has keys with explicitly defined 0 on read
+      (test[0]).should.equal('path');
+      (test[1]).should.equal('embedded.path');
+      (test[2]).should.equal('arrayOfDocs.array');
+      //has keys with no acl defined and defaulted to 0
+      (test.indexOf('aclIsNotDefined')).should.not.equal(-1);
+      (test.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
+      (test.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
+      (test.length).should.equal(6);
+      acl.read = 1;
+      select = accessControl.getAllowed(acl, model);
+      test = select.split(' ');
+      //Should have additional keys with acl.read === 1
+      (test.indexOf('embedded.array')).should.not.equal(-1);
+      (test.indexOf('arrayOfDocs.path')).should.not.equal(-1);
+      (test.length).should.equal(8);
+      done();
     });
     it('should not change initial query', function(done){
       var objectId = mongoose.Types.ObjectId();
@@ -118,9 +164,32 @@ describe('Access control', function(){
   describe('indexing', function(){
     it('should generate proper map', function(done){
       var map = accessControl.createRules(schema, {create: 1, delete: 1});
-      (map.$1.read).should.be.an.Array;
-      (map.$1.read.indexOf('path')).should.not.equal(-1);
-      (map.$1.read.indexOf('embedded.array')).should.not.equal(-1);
+      (map.paths.$1.read).should.be.an.Array;
+      (map.paths.$0.read.indexOf('path')).should.not.equal(-1);
+      (map.paths.$1.read.indexOf('embedded.array')).should.not.equal(-1);
+      done();
+    });
+    it('should apply defaults', function(done){
+      var map = accessControl.createRules(schema, {create: 1, delete: 1, update: 1, read: 1});
+      (map.paths.$1.read.indexOf('aclIsNotDefined')).should.not.equal(-1);
+      (map.paths.$1.read.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
+      (map.paths.$1.read.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
+      done();
+    });
+    it('if no acl specified neither in schema nor in plugin config acl is 0', function(done){
+      var map = accessControl.createRules(schema, {create: 1, delete: 1});
+      should.not.exist(map.paths.$undefined);
+      (map.paths.$0.read.indexOf('aclIsNotDefined')).should.not.equal(-1);
+      (map.paths.$0.read.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
+      (map.paths.$0.read.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
+      done();
+    });
+    it('should generate string with all possible paths', function(done){
+      var map = accessControl.createRules(schema, {create: 1, delete: 1});
+      (map.all).should.be.an.Array;
+      (map.all.indexOf('path')).should.not.equal(-1);
+      (map.all.indexOf('embedded.path')).should.not.equal(-1);
+      (map.all.indexOf('arrayOfDocs.path')).should.not.equal(-1);
       done();
     });
   });
@@ -145,7 +214,7 @@ describe('Access control', function(){
         accessControl.validateRead(q, acl, model);
       }
       var end = Date.now();
-      console.log('complex read acl parser: ', 1000 / (end - start), 'ops per second');
+      console.log('complex read acl parser: ', (1000 / (end - start)) * 1000, 'ops per second\n');
 
     });
     it('complex update command parsing', function(){
@@ -178,7 +247,7 @@ describe('Access control', function(){
       }
 
       var end = Date.now();
-      console.log('complex update acl parser: ', 1000 / (end - start), 'ops per second');
+      console.log('complex update acl parser: ', (1000 / (end - start)) * 1000, 'ops per second\n');
 
     });
   });

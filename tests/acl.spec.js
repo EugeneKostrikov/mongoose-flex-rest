@@ -9,7 +9,7 @@ var schema = new Schema({
     path: {type: String, acl:{read: 0, write: 1}},
     array: [{type: String, acl:{read: 1, write: 1}}]
   },
-  array: [{type: String, acl:{update: 3, delete: 4}}],
+  array: [{type: String, acl:{read: 0, write: 1}}],
   arrayOfDocs: [{
     path: {type: String, acl:{create: 3, read: 1, update: 3, delete:3}},
     array: {type: String, acl:{read: 0, write: 0}}
@@ -19,13 +19,13 @@ var schema = new Schema({
   aclIsNotDefined: {type: String}
 });
 var model = mongoose.model('acl_model', schema);
-accessControl.createRules(schema, {create: 1, delete: 1});
+accessControl.createRules(schema, {create: 1, delete: 1, read: 0, update: 2});
 
 var acl = {
-  read: 1,
-  create: 2,
-  update: 2,
-  delete: 2
+  read: 0,
+  create: 0,
+  update: 0,
+  delete: 0
 };
 
 
@@ -35,30 +35,32 @@ describe('Access control', function(){
       //consumes rewritten query after query parser
       var q = {
         array: {
-          $in: ['something']
+          $in: ['something'] //0
         },
-        path: new RegExp('something', 'ig'),
+        path: new RegExp('something', 'ig'), //0
         embedded:{
-          path: 'another'
+          path: 'another' //0
         },
         arrayOfDocs:{
           $elemMatch:{
-            path: 'value'
+            path: 'value' //1
           }
         }
       };
+      acl.read = 0;
       (accessControl.validateRead(q, acl, model)).should.not.be.ok;
-      acl.read = 10;
+      acl.read = 1;
       (accessControl.validateRead(q, acl, model)).should.be.ok;
     });
     it('should pass 0-allowed queries', function(done){
+      acl.read = 0;
       var q = {
         embedded: {
-          path: 'something'
+          path: 'something' //0
         },
         arrayOfDocs:{
-          _$elemMatch:{
-            array: 'something'
+          $elemMatch:{
+            array: 'something' //0
           }
         }
       };
@@ -107,21 +109,22 @@ describe('Access control', function(){
       var select = accessControl.getAllowed(acl, model);
       var test = select.split(' ');
       //has keys with explicitly defined 0 on read
-      (test[0]).should.equal('path');
-      (test[1]).should.equal('embedded.path');
-      (test[2]).should.equal('arrayOfDocs.array');
+      (test.indexOf('path')).should.not.equal(-1);
+      (test.indexOf('embedded.path')).should.not.equal(-1);
+      (test.indexOf('arrayOfDocs.array')).should.not.equal(-1);
+      (test.indexOf('array')).should.not.equal(-1);
       //has keys with no acl defined and defaulted to 0
       (test.indexOf('aclIsNotDefined')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
-      (test.length).should.equal(6);
+      (test.length).should.equal(7);
       acl.read = 1;
       select = accessControl.getAllowed(acl, model);
       test = select.split(' ');
       //Should have additional keys with acl.read === 1
       (test.indexOf('embedded.array')).should.not.equal(-1);
       (test.indexOf('arrayOfDocs.path')).should.not.equal(-1);
-      (test.length).should.equal(8);
+      (test.length).should.equal(9);
       done();
     });
     it('should not change initial query', function(done){

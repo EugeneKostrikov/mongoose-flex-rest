@@ -34,7 +34,7 @@ describe('Module parsers', function(){
         }
       };
     });
-    it('should rewrite all _$ in query', function(){
+    it('should rewrite all _$ in a plain query', function(){
       var q = parsers.query(sampleQuery);
       iterate(q);
       function iterate(obj){
@@ -51,6 +51,25 @@ describe('Module parsers', function(){
       (q.date).should.be.an.Object;
       (q.date.$gte).should.be.an.instanceof(Date);
       (q.date.$lt).should.be.an.instanceof(Date);
+    });
+    it('should properly rewrite complex queries', function(done){
+      var query = {
+        _$or: [{
+          field: {
+            _$exists: false
+          }
+        },{
+          path: {
+            _$size: 10
+          }
+        }]
+      };
+      var parsed = parsers.query(query);
+      should.exist(parsed.$or[0].field.$exists);
+      (parsed.$or[0].field.$exists).should.equal(false);
+      should.exist(parsed.$or[1].path.$size);
+      (parsed.$or[1].path.$size).should.equal(10);
+      done();
     });
   });
   describe('update command parser', function(){

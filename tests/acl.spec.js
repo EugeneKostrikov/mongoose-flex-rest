@@ -157,6 +157,26 @@ describe('Access control', function(){
       (accessControl.validateRead(q, acl, model)).should.be.ok;
       done();
     });
+    it('should validate EVERY path in arrays of nested docs', function(done){
+      /*_$push:{
+        arrayOfDocs : [newItem]
+      }*/
+      acl.update = 0;
+      acl.read = 1;
+      var cmd = {
+        _$push:{
+          arrayOfDocs: [{
+            path: 'something',
+            array: ['i', 'am', 'not', 'empty']
+            //Nesting here another collection of documents is not a great idea
+          }]
+        }
+      };
+      (accessControl.validateUpdate(cmd, acl, model)).should.not.be.ok;
+      acl.update = 3;
+      (accessControl.validateUpdate(cmd, acl, model)).should.be.ok;
+      done();
+    });
   });
   describe('indexing', function(){
     it('should generate proper map', function(done){

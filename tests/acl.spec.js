@@ -67,6 +67,30 @@ describe('Access control', function(){
       (accessControl.validateRead(q, acl, model)).should.be.ok;
       done();
     });
+    it('should work with $or/$and query', function(done){
+      acl.read = 0;
+      var q = {
+        embedded: {
+          path: 'something'
+        },
+        $or: [{
+          path: {
+            $exists: false
+          }
+        },{
+          path: 'something'
+        }],
+        $and: [{
+          path: {
+            $exists: false
+          }
+        },{
+          path: 'something'
+        }]
+      };
+      (accessControl.validateRead(q,acl, model)).should.be.ok;
+      done();
+    });
     it('should properly validate update query', function(){
       var cmd = {
         $set: {
@@ -91,6 +115,7 @@ describe('Access control', function(){
           }
         }
       };
+      acl.update = 0;
       (accessControl.validateUpdate(cmd, acl, model)).should.not.be.ok;
       acl.update = 10;
       (accessControl.validateUpdate(cmd, acl, model)).should.be.ok;

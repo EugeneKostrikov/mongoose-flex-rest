@@ -192,6 +192,25 @@ describe('REST plugin', function(){
             done();
           });
         });
+        it('should work with $regex nested to $elemMatch', function(done){
+          var q = {
+            embedded: {
+              _$elemMatch:{
+                title: {
+                  _$regex: {
+                    val: 'fir',
+                    options: 'i'
+                  }
+                }
+              }
+            }
+          };
+          model.rest_read(q, {acl: acl}, function(err, docs){
+            should.not.exist(err);
+            (docs.length).should.equal(1);
+            done();
+          });
+        });
       });
       describe('configuration', function(){
         var doc;

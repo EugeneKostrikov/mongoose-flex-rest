@@ -213,6 +213,7 @@ describe('Access control', function(){
     });
     it('should apply defaults', function(done){
       var map = accessControl.createRules(schema, {create: 1, delete: 1, update: 1, read: 1});
+      (map.paths.$0.read.indexOf('path')).should.not.equal(-1);
       (map.paths.$1.read.indexOf('aclIsNotDefined')).should.not.equal(-1);
       (map.paths.$1.read.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
       (map.paths.$1.read.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);

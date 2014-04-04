@@ -71,6 +71,24 @@ describe('Module parsers', function(){
       (parsed.$or[1].path.$size).should.equal(10);
       done();
     });
+    it('should properly rewrite $regex nested to $elemMatch', function(done){
+      var query = {
+        array: {
+          _$elemMatch: {
+            path: {
+              _$regex:{
+                val: 'some',
+                options: 'i'
+              }
+            }
+          }
+        }
+      };
+      var parsed = parsers.query(query);
+      should.exist(parsed.array.$elemMatch.path);
+      (parsed.array.$elemMatch.path.$regex).should.be.an.instanceof(RegExp);
+      done();
+    });
   });
   describe('update command parser', function(){
     var doc, Model;

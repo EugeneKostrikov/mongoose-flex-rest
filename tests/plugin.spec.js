@@ -9,10 +9,17 @@ var acl = {
   create: 0,
   read: 0,
   update: 1,
-  delete: 0
+  delete: 1
 };
 
 describe('REST plugin', function(){
+  var connection;
+  before(function(done){
+    connection = mongoose.connect('mongodb://localhost:27017/test', function(err){
+      should.not.exist(err);
+      done();
+    });
+  });
   describe('Plugin configs', function(){
     describe('Exclude methods', function(){
       var schema, control;
@@ -44,30 +51,27 @@ describe('REST plugin', function(){
     });
   });
   describe('plugin methods', function(){
-    var connection, schema, model;
+    var schema, model;
     before(function(done){
-      connection = mongoose.connect('mongodb://localhost:27017/test', function(err){
-        should.not.exist(err);
-        schema = new Schema({
-          str: {type: String, acl: {read: 0, update: 0}},
-          date: {type: Date, acl: {read: 0, update: 0}},
-          num: {type: Number, acl: {read: 0, update: 0}},
-          arr: [{type: Number, acl: {read: 0, update: 0}}],
-          arrayOfStrings: [{type: String, acl: {read: 0, update: 0}}],
-          obj: {
-            one: {type: String, acl: {read: 0, update: 0}}
-          },
-          embedded: [{
-            title: {type: String, acl: {read: 0, update: 0}},
-            array: [{type: Number, acl: {read: 0, update: 0}}],
-            num: {type: Number, acl: {read:0, update: 0}}
-          }],
-          ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, update: 0}}
-        }, {collection: 'test_instances'});
-        schema.plugin(plugin, {create: 0, delete: 0});
-        model = connection.model('model', schema);
-        done();
-      });
+      schema = new Schema({
+        str: {type: String, acl: {read: 0, update: 0}},
+        date: {type: Date, acl: {read: 0, update: 0}},
+        num: {type: Number, acl: {read: 0, update: 0}},
+        arr: [{type: Number, acl: {read: 0, update: 0}}],
+        arrayOfStrings: [{type: String, acl: {read: 0, update: 0}}],
+        obj: {
+          one: {type: String, acl: {read: 0, update: 0}}
+        },
+        embedded: [{
+          title: {type: String, acl: {read: 0, update: 0}},
+          array: [{type: Number, acl: {read: 0, update: 0}}],
+          num: {type: Number, acl: {read:0, update: 0}}
+        }],
+        ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, update: 0}}
+      }, {collection: 'test_instances'});
+      schema.plugin(plugin, {acl: {create: 0, delete: 1}});
+      model = connection.model('model', schema);
+      done();
     });
     describe('create', function(){
       it('has nothing to test', function(done){
@@ -209,76 +213,6 @@ describe('REST plugin', function(){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
-          });
-        });
-      });
-      describe('configuration', function(){
-        var doc;
-        before(function(done){
-          model.findOne({str: 'one'}, function(err, document){
-            should.not.exist(err);
-            (document.str).should.equal('one');
-            doc = document;
-            var newDoc = new model({
-              str: 'referenced',
-              ref: [doc._id]
-            });
-            newDoc.save(function(err){
-              should.not.exist(err);
-              done();
-            });
-          });
-        });
-        describe('population', function(){
-          it('should be available with string notation', function(done){
-            var q = {
-              str: 'referenced'
-            };
-            var opts = {
-              populate: 'ref',
-              acl: acl
-            };
-            model.rest_read(q, opts, function(err, docs){
-              should.not.exist(err);
-              (docs[0].ref.str).should.equal('one');
-              done();
-            });
-          });
-          it('it should have object notation', function(done){
-            var q = {
-              str: 'referenced'
-            };
-            var opts = {
-              acl: acl,
-              populate: JSON.stringify({
-                path: 'ref',
-                select: 'num'
-              }) //This is not parsed by express bodyparser
-            };
-            model.rest_read(q, opts, function(err, docs){
-              should.not.exist(err);
-              (docs[0].ref.num).should.equal(1);
-              should.not.exist(docs[0].ref.str);
-              done();
-            });
-          });
-          it('should support array notation to populate multiple paths', function(done){
-            var q = {
-              str: 'referenced'
-            };
-            var opts = {
-              acl: acl,
-              populate: JSON.stringify([
-                {path: 'ref', select: 'str'},
-                {path: 'undefined'}
-              ])
-            };
-            model.rest_read(q, opts, function(err, docs){
-              should.not.exist(err);
-              (docs[0].ref.str).should.equal('one');
-              should.not.exist(docs[0].ref.num);
-              done();
-            });
           });
         });
       });
@@ -589,5 +523,107 @@ describe('REST plugin', function(){
       connection.connection.db.dropCollection('test_instances');
     });
 
+  });
+  describe('population', function(){
+    var parentSchema, parentModel, childSchema, childModel;
+    before(function(done){
+      parentSchema = new Schema({
+        title: {type: String},
+        child: {type: Schema.Types.ObjectId, ref: 'childModel'}
+      }, {collection: 'parentInstances'});
+      parentSchema.plugin(plugin, {acl: {create: 1, read: 1, update: 1, delete: 1}});
+      parentModel = connection.model('parentModel', parentSchema);
+
+      childSchema = new Schema({
+        author: {type: String, acl: {read: 1, update: 1}},
+        post: {type: String, acl: {read: 2, update: 2}}
+      }, {collection: 'childInstances'});
+      childSchema.plugin(plugin, {acl: {create: 1, read: 1, update: 1, delete: 1}});
+      childModel = connection.model('childModel', childSchema);
+      done();
+    });
+    beforeEach(function(done){
+      var child = new childModel({author: 'test', post: 'test'});
+      child.save(function(err, doc){
+        should.not.exist(err);
+        var parent = new parentModel({title: 'test', child: doc._id});
+        parent.save(function(err){
+          should.not.exist(err);
+          done();
+        });
+      });
+    });
+    it('should populate by path', function(done){
+      var query = {};
+      var options = {
+        populate: 'child',
+        acl: {read: 2}
+      };
+      parentModel.rest_read(query, options, function(err, docs){
+        should.not.exist(err);
+        (docs.length).should.equal(1);
+        (docs[0].child.author).should.equal('test');
+        done();
+      });
+    });
+    it('should be able to select populated paths', function(done){
+      var options = {
+        populate: {
+          path: 'child',
+          select: 'author'
+        },
+        acl: {read: 1}
+      };
+      parentModel.rest_read({}, options, function(err, docs){
+        should.not.exist(err);
+        (docs[0].child.author).should.equal('test');
+        should.not.exist(docs[0].child.post);
+        done();
+      });
+    });
+    it('should be able to exclude fields from populated object', function(done){
+      var options = {
+        populate: {
+          path: 'child',
+          select: '-post'
+        },
+        acl: {read: 1}
+      };
+      parentModel.rest_read({}, options, function(err, docs){
+        should.not.exist(err);
+        (docs[0].child.author).should.equal('test');
+        should.not.exist(docs[0].child.post);
+        done();
+      })
+    });
+    it('should fail to query if populated path validation fails', function(done){
+      var options = {
+        populate: {
+          path: 'child',
+          select: 'author post'
+        },
+        acl: {read: 1}
+      };
+      parentModel.rest_read({}, options, function(err){
+        should.exist(err);
+        done();
+      });
+    });
+    it('should return allowed fields if populate.select is not defined', function(done){
+      var options = {
+        populate: 'child',
+        acl: {read: 1}
+      };
+      parentModel.rest_read({}, options, function(err, docs){
+        should.not.exist(err);
+        should.exist(docs[0].child.author);
+        should.not.exist(docs[0].child.post);
+        done();
+      });
+    });
+    afterEach(function(){
+      connection.connection.db.dropCollection('parentInstances');
+      connection.connection.db.dropCollection('childInstances');
+    });
   });
 });

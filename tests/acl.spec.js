@@ -17,9 +17,18 @@ var schema = new Schema({
   partially_defined: {type: String, acl: {read: 1}},
   aclIsNotDefinedObject: {type: Schema.Types.Mixed},
   aclIsNotDefinedArray: [{type: String}],
-  aclIsNotDefined: {type: String}
+  aclIsNotDefined: {type: String},
+  child: {type: Schema.Types.ObjectId, ref: 'acl_child'} //TODO what to do with acl of this ref?
+});
+
+var child = new Schema({
+  path: {type: String, acl: {read: 0, update: 0}},
+  author: {type: String, acl: {read: 1, update: 1}},
+  comment: {type: String, acl: {read: 2, update: 2}}
 });
 var model = mongoose.model('acl_model', schema);
+var childModel = mongoose.model('acl_child', child);
+accessControl.createRules(child, {create: 0, delete: 0, read: 0, update: 0});
 accessControl.createRules(schema, {create: 1, delete: 1, read: 0, update: 2});
 
 var acl = {
@@ -143,14 +152,14 @@ describe('Access control', function(){
       (test.indexOf('aclIsNotDefined')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
-      (test.length).should.equal(7);
+      (test.length).should.equal(8);
       acl.read = 1;
       select = accessControl.getAllowed(acl, model);
       test = select.split(' ');
       //Should have additional keys with acl.read === 1
       (test.indexOf('embedded.array')).should.not.equal(-1);
       (test.indexOf('arrayOfDocs.path')).should.not.equal(-1);
-      (test.length).should.equal(10);
+      (test.length).should.equal(11);
       done();
     });
     it('should not change initial query', function(done){
@@ -184,9 +193,6 @@ describe('Access control', function(){
       done();
     });
     it('should validate EVERY path in arrays of nested docs', function(done){
-      /*_$push:{
-        arrayOfDocs : [newItem]
-      }*/
       acl.update = 0;
       acl.read = 1;
       var cmd = {
@@ -218,6 +224,28 @@ describe('Access control', function(){
       acl.update = 3;
       (accessControl.validateUpdate(cmd, acl, model)).should.be.ok;
       done();
+    });
+    describe('population', function(){
+      it('should validate explicitly defined populated paths', function(done){
+        var populate = {
+          path: 'child',
+          select: 'path author comment'
+        };
+        acl.read = 1;
+        accessControl.validatePop(populate, acl, model).should.not.be.ok;
+        acl.read = 2;
+        accessControl.validatePop(populate, acl, model).should.be.ok;
+        done();
+      });
+      it('should ignore excluded paths', function(done){
+        var populate = {
+          path: 'child',
+          select: 'path -comment'
+        };
+        acl.read = 0;
+        accessControl.validatePop(populate, acl, model).should.be.ok;
+        done();
+      });
     });
   });
   describe('indexing', function(){

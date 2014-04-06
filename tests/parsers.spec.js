@@ -318,6 +318,46 @@ describe('Module parsers', function(){
       });
     });
   });
+  describe('populate query parser', function(){
+    it('should consume string query', function(done){
+      var populate = 'child';
+      var parsed = parsers.populate(populate);
+      parsed.should.be.an.Array;
+      (parsed[0].path).should.equal('child');
+      done();
+    });
+    it('should consume objects', function(done){
+      var populate = {
+        path: 'child',
+        select: 'something'
+      };
+      var parsed = parsers.populate(populate);
+      parsed.should.be.an.Array;
+      (parsed[0].path).should.equal('child');
+      (parsed[0].select).should.equal('something');
+      done();
+    });
+    it('should consume arrays of objects', function(done){
+      var populate = [{
+        path: 'child',
+        select: 'something'
+      }, {
+        path: 'another',
+        select: 'something'
+      }];
+      var parsed = parsers.populate(populate);
+      parsed.should.be.an.Array;
+      (parsed[0].path).should.equal('child');
+      (parsed[1].path).should.equal('another');
+      done();
+    });
+    it('should return empty array if populate is undefined', function(done){
+      var parsed = parsers.populate();
+      parsed.should.be.an.Array;
+      (parsed.length).should.equal(0);
+      done();
+    });
+  });
   describe('performance', function(){
     describe('read ops', function(){
       var sampleQuery = {};

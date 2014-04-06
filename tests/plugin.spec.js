@@ -18,12 +18,12 @@ describe('REST plugin', function(){
       var schema, control;
       before(function(){
         schema = new Schema({
-          key: {type: String, acl: {read: 0, write: 0}},
-          something: {type: String, acl: {read: 1, write: 1}},
+          key: {type: String, acl: {read: 0, update: 0}},
+          something: {type: String, acl: {read: 1, update: 1}},
           obj: {
-            path: {type: String, acl: {read: 1, write: 1}}
+            path: {type: String, acl: {read: 1, update: 1}}
           },
-          arr: [{type: String, acl: {read: 1, write: 1}}]},
+          arr: [{type: String, acl: {read: 1, update: 1}}]},
           {collection: 'test_instances'}
         );
         schema.plugin(plugin, {exclude: ['create', 'read']});
@@ -49,20 +49,20 @@ describe('REST plugin', function(){
       connection = mongoose.connect('mongodb://localhost:27017/test', function(err){
         should.not.exist(err);
         schema = new Schema({
-          str: {type: String, acl: {read: 0, write: 0}},
-          date: {type: Date, acl: {read: 0, write: 0}},
-          num: {type: Number, acl: {read: 0, write: 0}},
-          arr: [{type: Number, acl: {read: 0, write: 0}}],
-          arrayOfStrings: [{type: String, acl: {read: 0, write: 0}}],
+          str: {type: String, acl: {read: 0, update: 0}},
+          date: {type: Date, acl: {read: 0, update: 0}},
+          num: {type: Number, acl: {read: 0, update: 0}},
+          arr: [{type: Number, acl: {read: 0, update: 0}}],
+          arrayOfStrings: [{type: String, acl: {read: 0, update: 0}}],
           obj: {
-            one: {type: String, acl: {read: 0, write: 0}}
+            one: {type: String, acl: {read: 0, update: 0}}
           },
           embedded: [{
-            title: {type: String, acl: {read: 0, write: 0}},
-            array: [{type: Number, acl: {read: 0, write: 0}}],
-            num: {type: Number, acl: {read:0, write: 0}}
+            title: {type: String, acl: {read: 0, update: 0}},
+            array: [{type: Number, acl: {read: 0, update: 0}}],
+            num: {type: Number, acl: {read:0, update: 0}}
           }],
-          ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, write: 0}}
+          ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, update: 0}}
         }, {collection: 'test_instances'});
         schema.plugin(plugin, {create: 0, delete: 0});
         model = connection.model('model', schema);

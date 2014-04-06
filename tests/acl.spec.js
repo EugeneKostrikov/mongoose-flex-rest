@@ -4,16 +4,17 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var schema = new Schema({
-  path: {type: String, acl:{read: 0, write: 2}},
+  path: {type: String, acl:{read: 0, update: 2}},
   embedded:{
-    path: {type: String, acl:{read: 0, write: 1}},
-    array: [{type: String, acl:{read: 1, write: 1}}]
+    path: {type: String, acl:{read: 0, update: 1}},
+    array: [{type: String, acl:{read: 1, update: 1}}]
   },
-  array: [{type: String, acl:{read: 0, write: 1}}],
+  array: [{type: String, acl:{read: 0, update: 1}}],
   arrayOfDocs: [{
-    path: {type: String, acl:{create: 3, read: 1, update: 3, delete:3}},
-    array: {type: String, acl:{read: 0, write: 0}}
+    path: {type: String, acl:{read: 1, update: 3}},
+    array: {type: String, acl:{read: 0, update: 0}}
   }],
+  partially_defined: {type: String, acl: {read: 1}},
   aclIsNotDefinedObject: {type: Schema.Types.Mixed},
   aclIsNotDefinedArray: [{type: String}],
   aclIsNotDefined: {type: String}
@@ -149,7 +150,7 @@ describe('Access control', function(){
       //Should have additional keys with acl.read === 1
       (test.indexOf('embedded.array')).should.not.equal(-1);
       (test.indexOf('arrayOfDocs.path')).should.not.equal(-1);
-      (test.length).should.equal(9);
+      (test.length).should.equal(10);
       done();
     });
     it('should not change initial query', function(done){
@@ -202,6 +203,22 @@ describe('Access control', function(){
       (accessControl.validateUpdate(cmd, acl, model)).should.be.ok;
       done();
     });
+    it('should be able to $set nested array', function(done){
+      var cmd = {
+        _$set: {
+          arrayOfDocs: [{
+            _id: new mongoose.Types.ObjectId().toString(),
+            path: 'something',
+            array: ['another']
+          }]
+        }
+      };
+      acl.update = 0;
+      (accessControl.validateUpdate(cmd, acl, model)).should.not.be.ok;
+      acl.update = 3;
+      (accessControl.validateUpdate(cmd, acl, model)).should.be.ok;
+      done();
+    });
   });
   describe('indexing', function(){
     it('should generate proper map', function(done){
@@ -233,6 +250,12 @@ describe('Access control', function(){
       (map.all.indexOf('path')).should.not.equal(-1);
       (map.all.indexOf('embedded.path')).should.not.equal(-1);
       (map.all.indexOf('arrayOfDocs.path')).should.not.equal(-1);
+      done();
+    });
+    it('should fail to apply defaults if acl is defined partially', function(done){
+      var map = accessControl.createRules(schema, {read: 1});
+      (map.paths.$1.read.indexOf('partially_defined')).should.not.equal(-1);
+      (map.paths.$1.update.indexOf('partially_defined')).should.equal(-1);
       done();
     });
   });

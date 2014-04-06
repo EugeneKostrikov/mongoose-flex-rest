@@ -407,7 +407,7 @@ describe('REST plugin', function(){
             done();
           });
         });
-/*
+
         it('$inc should work with arrays', function(done){
           var cmd = {
             _$inc:{
@@ -442,7 +442,7 @@ describe('REST plugin', function(){
             done();
           });
         });
-*/
+
       });
       describe('working with arrays', function(){
         it('should have working $push method', function(done){

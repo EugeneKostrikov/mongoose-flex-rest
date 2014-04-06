@@ -1,6 +1,6 @@
 {
   "name": "mongoose-flex-rest",
-  "version": "0.0.11",
+  "version": "0.1.0",
   "description": "REST plugin with rich query support",
   "main": "index.js",
   "directories": {
@@ -9,12 +9,16 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/EugeneKostrikov/mongoose-flex-rest"
+  },
   "author": "Eugene Kostrikov",
   "license": "MIT",
   "dependencies": {
-    "underscore": "~1.6.0",
-    "async": "~0.2.10",
-    "mongoose": "~3.8.8"
+    "underscore": "~1.6.*",
+    "async": "~0.2.*",
+    "mongoose": "~3.8.*"
   },
   "devDependencies": {
     "chai": "~1.9.0",

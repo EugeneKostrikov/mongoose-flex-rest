@@ -18,7 +18,8 @@ var schema = new Schema({
   aclIsNotDefinedObject: {type: Schema.Types.Mixed},
   aclIsNotDefinedArray: [{type: String}],
   aclIsNotDefined: {type: String},
-  child: {type: Schema.Types.ObjectId, ref: 'acl_child'} //TODO what to do with acl of this ref?
+  child: {type: Schema.Types.ObjectId, ref: 'acl_child'}, //TODO what to do with acl of this ref?
+  children: [{type: Schema.Types.ObjectId, ref: 'acl_child'}]
 });
 
 var child = new Schema({
@@ -152,14 +153,14 @@ describe('Access control', function(){
       (test.indexOf('aclIsNotDefined')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
-      (test.length).should.equal(8);
+      (test.length).should.equal(9);
       acl.read = 1;
       select = accessControl.getAllowed(acl, model);
       test = select.split(' ');
       //Should have additional keys with acl.read === 1
       (test.indexOf('embedded.array')).should.not.equal(-1);
       (test.indexOf('arrayOfDocs.path')).should.not.equal(-1);
-      (test.length).should.equal(11);
+      (test.length).should.equal(12);
       done();
     });
     it('should not change initial query', function(done){
@@ -243,6 +244,15 @@ describe('Access control', function(){
           select: 'path -comment'
         };
         acl.read = 0;
+        accessControl.validatePop(populate, acl, model).should.be.ok;
+        done();
+      });
+      it('should work with one-to-many reference', function(done){
+        var populate = {
+          path: 'child',
+          select: ''
+        };
+        acl.read = 2;
         accessControl.validatePop(populate, acl, model).should.be.ok;
         done();
       });

@@ -1,6 +1,6 @@
 {
   "name": "mongoose-flex-rest",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "REST plugin with rich query support",
   "main": "index.js",
   "directories": {

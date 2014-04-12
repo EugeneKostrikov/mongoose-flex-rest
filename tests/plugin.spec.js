@@ -626,4 +626,39 @@ describe('REST plugin', function(){
       connection.connection.db.dropCollection('childInstances');
     });
   });
+  describe("access control", function(){
+    var schema, model;
+    before(function(done){
+      schema = new Schema({
+        title: {type: String, acl: {read: 0, update: 1}},
+        post: {type: String, acl: {read: 1, update: 1}},
+        tags: {type: Array, acl: {read: 4, update: 1}}
+      }, {collection: 'aclTestModels'});
+      schema.plugin(plugin, {acl: {create: 1, read: 1, update: 1, delete: 1}});
+      model = connection.model('aclModel', schema);
+      var doc = new model({
+        title: 'test',
+        post: 'test',
+        tags: ['test']
+      });
+      doc.save(function(err){
+        done(err);
+      });
+    });
+    it('read query should return allowed paths when no select query specified', function(done){
+      var q = {
+        title: 'test'
+      };
+      model.rest_read(q, null, function(err, docs){
+        should.not.exist(err);
+        docs.should.be.an.Array;
+        should.not.exist(docs[0].post);
+        should.not.exist(docs[0].tags);
+        done();
+      });
+    });
+    after(function(){
+      connection.connection.db.dropCollection('aclTestModels');
+    });
+  });
 });

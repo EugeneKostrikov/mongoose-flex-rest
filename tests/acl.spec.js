@@ -171,6 +171,12 @@ describe('Access control', function(){
       (accessControl.validateSelect(select, {read: 1}, model)).should.be.ok;
       done();
     });
+    it('should properly validate empty select string', function(done){
+      var select = '';
+      (accessControl.validateSelect(select, {read: 0}, model)).should.not.be.ok;
+      (accessControl.validateSelect(select, {read: 2}, model)).should.be.ok;
+      done();
+    });
     it('should not change initial query', function(done){
       var objectId = mongoose.Types.ObjectId();
       var q = {
@@ -290,12 +296,13 @@ describe('Access control', function(){
       (map.paths.$0.read.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
       done();
     });
-    it('should generate string with all possible paths', function(done){
+    it('should generate array with all possible paths', function(done){
       var map = accessControl.createRules(schema, {create: 1, delete: 1});
       (map.all).should.be.an.Array;
       (map.all.indexOf('path')).should.not.equal(-1);
       (map.all.indexOf('embedded.path')).should.not.equal(-1);
       (map.all.indexOf('arrayOfDocs.path')).should.not.equal(-1);
+      (map.all.indexOf('aclIsNotDefined')).should.not.equal(-1);
       done();
     });
     it('should fail to apply defaults if acl is defined partially', function(done){

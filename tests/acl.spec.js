@@ -163,6 +163,14 @@ describe('Access control', function(){
       (test.length).should.equal(12);
       done();
     });
+    it('should validate selected paths', function(done){
+      var select = 'path embedded.path';
+      (accessControl.validateSelect(select, {read: 0}, model)).should.be.ok;
+      select += ' embedded.array';
+      (accessControl.validateSelect(select, {read: 0}, model)).should.not.be.ok;
+      (accessControl.validateSelect(select, {read: 1}, model)).should.be.ok;
+      done();
+    });
     it('should not change initial query', function(done){
       var objectId = mongoose.Types.ObjectId();
       var q = {

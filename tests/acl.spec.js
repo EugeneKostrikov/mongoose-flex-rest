@@ -18,7 +18,7 @@ var schema = new Schema({
   aclIsNotDefinedObject: {type: Schema.Types.Mixed},
   aclIsNotDefinedArray: [{type: String}],
   aclIsNotDefined: {type: String},
-  child: {type: Schema.Types.ObjectId, ref: 'acl_child'}, //TODO what to do with acl of this ref?
+  child: {type: Schema.Types.ObjectId, ref: 'acl_child'},
   children: [{type: Schema.Types.ObjectId, ref: 'acl_child'}]
 });
 

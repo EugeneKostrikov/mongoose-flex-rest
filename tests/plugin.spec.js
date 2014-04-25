@@ -333,7 +333,7 @@ describe('REST plugin', function(){
               arrayOfStrings: ['erased']
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd.length).should.equal(1);
             (upd[0].str).should.equal('changed');
@@ -357,7 +357,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].embedded[0].array[0]).should.equal(0);
             (upd[0].embedded[0].array.length).should.equal(1);
@@ -372,7 +372,7 @@ describe('REST plugin', function(){
               num: 1
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].num).should.equal(2);
             done();
@@ -388,7 +388,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].arr[0]).should.equal(3);
             done();
@@ -407,7 +407,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].embedded[0].num).should.equal(3);
             done();
@@ -417,7 +417,9 @@ describe('REST plugin', function(){
       });
       describe('working with arrays', function(){
         it('should have working $push method', function(done){
-          var q = {};
+          var q = {
+            acl: acl
+          };
           var cmd = {
             _$push: {
               arr: [2,3,4],
@@ -431,7 +433,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
+          model.rest_update(q, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(4);
             (updated[0].arr[2]).should.equal(3);
@@ -440,26 +442,30 @@ describe('REST plugin', function(){
           });
         });
         it('$push acts as $pushAll', function(done){
-          var q = {};
+          var q = {
+            acl: acl
+          };
           var cmd = {
             _$push: {
               arr: [2,3,4]
             }
           };
-          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
+          model.rest_update(q, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(4);
             done();
           });
         });
         it('should have working $addToSet method', function(done){
-          var q = {};
+          var q = {
+            acl: acl
+          };
           var cmd = {
             _$addToSet:{
               arr: [1,2]
             }
           };
-          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
+          model.rest_update(q, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(2);
             done();
@@ -478,7 +484,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {acl:acl}, function(err, updated){
+          model.rest_update({acl: acl}, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].embedded[0].array.length).should.equal(2);
             done();
@@ -490,7 +496,7 @@ describe('REST plugin', function(){
               arr: [1]
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].arr.length).should.equal(0);
             done();
@@ -502,7 +508,7 @@ describe('REST plugin', function(){
               arrayOfStrings: ['one', 'two']
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].arrayOfStrings.length).should.equal(1);
             (upd[0].arrayOfStrings[0]).should.equal('three');
@@ -515,7 +521,7 @@ describe('REST plugin', function(){
               arrayOfStrings: ['string']
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, updated){
+          model.rest_update({acl: acl}, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arrayOfStrings.length).should.equal(4);
             (updated[0].arrayOfStrings[3]).should.equal('string');

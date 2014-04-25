@@ -311,6 +311,22 @@ describe('Access control', function(){
       (map.paths.$1.update.indexOf('partially_defined')).should.equal(-1);
       done();
     });
+    it('should include virtuals', function(done){
+      schema.virtual('virtual.path');
+      var map = accessControl.createRules(schema, {read: 0, create: 0, update: 0, delete: 0});
+      (map.all.indexOf('virtual.path')).should.not.equal(-1);
+      done();
+    });
+    it('should apply default acl for virtual paths', function(done){
+      schema.virtual('virtual.path');
+      var map = accessControl.createRules(schema, {read: 1, create: 2, update: 3, delete: 4});
+      (map.paths.$1.read.indexOf('virtual.path')).should.not.equal(-1);
+      (map.paths.$2.create.indexOf('virtual.path')).should.not.equal(-1);
+      (map.paths.$3.update.indexOf('virtual.path')).should.not.equal(-1);
+      (map.paths.$4.delete.indexOf('virtual.path')).should.not.equal(-1);
+      done();
+    });
+    //TODO allow to set acl for virtuals
   });
   describe('performance', function(){
     it('complex read parsing', function(){

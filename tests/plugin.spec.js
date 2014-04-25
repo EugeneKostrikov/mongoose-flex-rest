@@ -69,13 +69,31 @@ describe('REST plugin', function(){
         }],
         ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, update: 0}}
       }, {collection: 'test_instances'});
-      schema.plugin(plugin, {acl: {create: 0, delete: 1}});
+      schema.plugin(plugin, {acl: {create: 1, delete: 1}});
       model = connection.model('model', schema);
       done();
     });
     describe('create', function(){
-      it('has nothing to test', function(done){
-        done();
+      it('should be able to create documents', function(done){
+        model.rest_create({str: 'string'}, {create: 1}, [], function(err, doc){
+          should.not.exist(err);
+          should.exist(doc);
+          done();
+        });
+      });
+      it('should set access level to zero when it is not specified', function(done){
+        model.rest_create({str: 'string'}, null, [], function(err, doc){
+          (err.message).should.equal('Access denied');
+          should.not.exist(doc);
+          done();
+        });
+      });
+      it('should validate provided accessLevel', function(done){
+        model.rest_create({str: 'string'}, {create: 0}, [], function(err, doc){
+          (err.message).should.equal('Access denied');
+          should.not.exist(doc);
+          done();
+        });
       });
     });
     describe('read', function(){

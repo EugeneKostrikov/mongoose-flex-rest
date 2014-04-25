@@ -546,7 +546,7 @@ describe('REST plugin', function(){
       it('should deny access if user has not enough acl power', function(done){
         model.findOne({}, function(err, doc){
           should.not.exist(err);
-          model.rest_delete(doc._id.toString(), null, function(err){
+          model.rest_delete({_id: doc._id.toString()}, function(err){
             (err.message).should.equal('Access denied');
             done();
           });
@@ -555,10 +555,24 @@ describe('REST plugin', function(){
       it('should have working delete method', function(done){
         model.findOne({}, function(err, doc){
           should.not.exist(err);
-          model.rest_delete(doc._id.toString(), {delete: 10}, function(err){
+          var query = {
+            _id: doc._id.toString(),
+            access: {read: 2, delete: 10}
+          };
+          model.rest_delete(query, function(err){
             should.not.exist(err);
             done();
           });
+        });
+      });
+      it('should be able to delete documents by query', function(done){
+        var query = {
+          find: {str: 'some string'},
+          access: {read: 2, delete: 10}
+        };
+        model.rest_delete(query, function(err){
+          should.not.exist(err);
+          done();
         });
       });
     });

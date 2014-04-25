@@ -83,14 +83,14 @@ describe('REST plugin', function(){
       });
       it('should set access level to zero when it is not specified', function(done){
         model.rest_create({str: 'string'}, null, [], function(err, doc){
-          (err.message).should.equal('Access denied');
+          (err.message).should.equal('Access denied: create');
           should.not.exist(doc);
           done();
         });
       });
       it('should validate provided accessLevel', function(done){
         model.rest_create({str: 'string'}, {create: 0}, [], function(err, doc){
-          (err.message).should.equal('Access denied');
+          (err.message).should.equal('Access denied: create');
           should.not.exist(doc);
           done();
         });
@@ -547,7 +547,7 @@ describe('REST plugin', function(){
         model.findOne({}, function(err, doc){
           should.not.exist(err);
           model.rest_delete({_id: doc._id.toString()}, function(err){
-            (err.message).should.equal('Access denied');
+            (err.message).should.equal('Access denied: delete');
             done();
           });
         });

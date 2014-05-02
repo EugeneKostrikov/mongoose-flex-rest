@@ -1,5 +1,12 @@
 var should = require('should');
 var Middleware = require('../lib/middleware');
+var Factory = require('../lib/factory');
+var mongoose = require('mongoose');
+var Schema = mongoose.Schema;
+
+var schema = new Schema({
+  path: {type: String}
+});
 
 describe('Middleware layer', function(){
   describe('plain middleware', function(){
@@ -46,6 +53,133 @@ describe('Middleware layer', function(){
         (err.message).should.equal('Catch me if you can');
         (secondMwRun).should.equal(false);
         done();
+      });
+    });
+  });
+  describe('middleware in action', function(){
+    var connection;
+    beforeEach(function(done){
+      connection = mongoose.createConnection('mongodb://localhost:27017/test', function(err){
+        should.not.exist(err);
+        done();
+      });
+    });
+    describe('ALL middleware', function(){
+      it('should have common interface', function(done){
+        var plugin = new Factory();
+        var called = false;
+        plugin.use('all', function(query, change, custom, callback){
+          this.should.be.instanceOf.model;
+          query.should.be.an.Object;
+          (query.path).should.equal('initial');
+          change.should.be.an.Object;
+          (change._$set.path).should.equal('changed');
+          custom.should.be.an.Object;
+          (custom.custom).should.equal('var');
+          callback.should.be.a.Function;
+          called = true;
+          callback();
+        });
+        schema.plugin(plugin.plugin, {});
+        var model = connection.model('test', schema);
+        model.rest_update({path: 'initial'}, {_$set: {path: 'changed'}}, {custom: 'var'}, function(err){
+          should.not.exist(err);
+          called.should.be.ok;
+          done();
+        });
+      });
+    });
+    describe('READ middleware', function(){
+      it('be passed query and custom object', function(done){
+        var plugin = new Factory();
+        var called = false;
+        plugin.use('read', function(query, change, custom, callback){
+          this.should.be.instanceOf.model;
+          should.not.exist(change);
+          (query.path).should.equal('something');
+          (custom.custom).should.equal('variable');
+          callback.should.be.a.Function;
+          called = true;
+          callback();
+        });
+        schema.plugin(plugin.plugin, {});
+        var model = connection.model('test', schema);
+        model.rest_read({path: 'something'}, {custom: 'variable'}, function(err){
+          should.not.exist(err);
+          called.should.be.ok;
+          done();
+        });
+      });
+    });
+    describe('CREATE middleware', function(){
+      it('be passed data to create and custom object', function(done){
+        var plugin = new Factory();
+        var called = false;
+        plugin.use('create', function(query, change, custom, callback){
+          this.should.be.instanceOf.model;
+          should.not.exist(query);
+          (change.path).should.equal('something');
+          (custom.custom).should.equal('variable');
+          callback.should.be.a.Function;
+          called = true;
+          callback();
+        });
+        schema.plugin(plugin.plugin, {});
+        var model = connection.model('test', schema);
+        model.rest_create({path: 'something'}, {}, {custom: 'variable'}, function(err){
+          should.not.exist(err);
+          called.should.be.ok;
+          done();
+        });
+      });
+    });
+    describe('UPDATE middleware', function(){
+      it('be passed query, change command and custom object', function(done){
+        var plugin = new Factory();
+        var called = false;
+        plugin.use('update', function(query, change, custom, callback){
+          this.should.be.instanceOf.model;
+          query.should.be.an.Object;
+          (query.path).should.equal('initial');
+          change.should.be.an.Object;
+          (change._$set.path).should.equal('changed');
+          custom.should.be.an.Object;
+          (custom.custom).should.equal('var');
+          callback.should.be.a.Function;
+          called = true;
+          callback();
+        });
+        schema.plugin(plugin.plugin, {});
+        var model = connection.model('test', schema);
+        model.rest_update({path: 'initial'}, {_$set: {path: 'changed'}}, {custom: 'var'}, function(err){
+          should.not.exist(err);
+          called.should.be.ok;
+          done();
+        });
+      });
+    });
+    describe('DELETE middleware', function(){
+      it('be passed query and custom object', function(done){
+        var plugin = new Factory();
+        var called = false;
+        plugin.use('delete', function(query, change, custom, callback){
+          this.should.be.instanceOf.model;
+          query.should.be.an.Object;
+          (query.path).should.equal('initial');
+          should.not.exist(change);
+          custom.should.be.an.Object;
+          (custom.custom).should.equal('var');
+          callback.should.be.a.Function;
+          called = true;
+          callback();
+        });
+        schema.plugin(plugin.plugin, {});
+        var model = connection.model('test', schema);
+        model.rest_delete({path: 'initial'}, {custom: 'var'}, function(err){
+          should.not.exist(err);
+          called.should.be.ok;
+          done();
+        });
       });
     });
   });

@@ -1,5 +1,4 @@
 var plugin = require('../lib/plugin');
-var expect = require('chai').expect;
 var should = require('should');
 var async = require('async');
 

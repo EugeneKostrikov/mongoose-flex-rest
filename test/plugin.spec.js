@@ -556,7 +556,7 @@ describe('REST plugin', function(){
           should.not.exist(err);
           var query = {
             _id: doc._id.toString(),
-            access: {read: 2, delete: 10}
+            acl: {read: 2, delete: 10}
           };
           model.rest_delete(query, function(err){
             should.not.exist(err);
@@ -567,7 +567,7 @@ describe('REST plugin', function(){
       it('should be able to delete documents by query', function(done){
         var query = {
           find: {str: 'some string'},
-          access: {read: 2, delete: 10}
+          acl: {read: 2, delete: 10}
         };
         model.rest_delete(query, function(err){
           should.not.exist(err);

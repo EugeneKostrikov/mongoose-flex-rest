@@ -117,7 +117,7 @@ describe('Middleware layer', function(){
         var called = false;
         plugin.use('create', function(query, change, custom, callback){
           this.should.be.instanceOf.model;
-          should.not.exist(query);
+          should.exist(query.acl);
           (change.path).should.equal('something');
           (custom.custom).should.equal('variable');
           callback.should.be.a.Function;

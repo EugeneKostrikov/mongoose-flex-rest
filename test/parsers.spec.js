@@ -2,10 +2,54 @@ var _ = require('underscore');
 var should = require('should');
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var parsers = require('../lib/parsers');
-
+var Parser = require('../lib/parsers');
+var parsers = new Parser();
 
 describe('Module parsers', function(){
+  describe('Parser class', function(){
+    var parser;
+    beforeEach(function(done){
+      parser = new Parser();
+      done();
+    });
+    it('should count $regex queries', function(done){
+      var q = {
+        path: {
+          _$regex: {
+            val: 'something',
+            options: 'i'
+          }
+        }
+      };
+      var parsed = parser.query(q);
+      (parser.difficulty.$regex).should.equal(1);
+      done();
+    });
+    it('should count logical (and, or, not, nor) queries', function(done){
+      var q = {
+        _$or: [
+          {path: 'value'},
+          {path: 'another value'},
+          {_$and: [
+            {hello: 'world'},
+            {hola: 'mundo'}
+          ]}
+        ]
+      };
+      var parsed = parser.query(q);
+      (parser.difficulty.logical).should.equal(5);
+      done();
+    });
+    it('should count comparison operators', function(done){
+      var q = {
+        path: {_$gte: 10},
+        another: {_$ne: 'value'}
+      };
+      var parsed = parser.query(q);
+      (parser.difficulty.comparison).should.equal(2);
+      done();
+    });
+  });
   describe('read query parser', function(){
     var sampleQuery = {};
     beforeEach(function(){

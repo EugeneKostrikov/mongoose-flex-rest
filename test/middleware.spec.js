@@ -71,7 +71,7 @@ describe('Middleware layer', function(){
         plugin.use('all', function(query, change, custom, callback){
           this.should.be.instanceOf.model;
           query.should.be.an.Object;
-          (query.path).should.equal('initial');
+          (query.find.path).should.equal('initial');
           change.should.be.an.Object;
           (change._$set.path).should.equal('changed');
           custom.should.be.an.Object;
@@ -82,7 +82,7 @@ describe('Middleware layer', function(){
         });
         schema.plugin(plugin.plugin, {});
         var model = connection.model('test', schema);
-        model.rest_update({path: 'initial'}, {_$set: {path: 'changed'}}, {custom: 'var'}, function(err){
+        model.rest_update({find: {path: 'initial'}}, {_$set: {path: 'changed'}}, {custom: 'var'}, function(err){
           should.not.exist(err);
           called.should.be.ok;
           done();
@@ -96,7 +96,7 @@ describe('Middleware layer', function(){
         plugin.use('read', function(query, change, custom, callback){
           this.should.be.instanceOf.model;
           should.not.exist(change);
-          (query.path).should.equal('something');
+          (query.find.path).should.equal('something');
           (custom.custom).should.equal('variable');
           callback.should.be.a.Function;
           called = true;
@@ -104,7 +104,7 @@ describe('Middleware layer', function(){
         });
         schema.plugin(plugin.plugin, {});
         var model = connection.model('test', schema);
-        model.rest_read({path: 'something'}, {custom: 'variable'}, function(err){
+        model.rest_read({find:{path: 'something'}}, {custom: 'variable'}, function(err){
           should.not.exist(err);
           called.should.be.ok;
           done();
@@ -140,7 +140,7 @@ describe('Middleware layer', function(){
         plugin.use('update', function(query, change, custom, callback){
           this.should.be.instanceOf.model;
           query.should.be.an.Object;
-          (query.path).should.equal('initial');
+          (query.find.path).should.equal('initial');
           change.should.be.an.Object;
           (change._$set.path).should.equal('changed');
           custom.should.be.an.Object;
@@ -151,7 +151,7 @@ describe('Middleware layer', function(){
         });
         schema.plugin(plugin.plugin, {});
         var model = connection.model('test', schema);
-        model.rest_update({path: 'initial'}, {_$set: {path: 'changed'}}, {custom: 'var'}, function(err){
+        model.rest_update({find: {path: 'initial'}}, {_$set: {path: 'changed'}}, {custom: 'var'}, function(err){
           should.not.exist(err);
           called.should.be.ok;
           done();
@@ -165,7 +165,7 @@ describe('Middleware layer', function(){
         plugin.use('delete', function(query, change, custom, callback){
           this.should.be.instanceOf.model;
           query.should.be.an.Object;
-          (query.path).should.equal('initial');
+          (query.find.path).should.equal('initial');
           should.not.exist(change);
           custom.should.be.an.Object;
           (custom.custom).should.equal('var');
@@ -175,7 +175,7 @@ describe('Middleware layer', function(){
         });
         schema.plugin(plugin.plugin, {});
         var model = connection.model('test', schema);
-        model.rest_delete({path: 'initial'}, {custom: 'var'}, function(err){
+        model.rest_delete({find: {path: 'initial'}}, {custom: 'var'}, function(err){
           should.not.exist(err);
           called.should.be.ok;
           done();

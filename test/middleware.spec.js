@@ -55,6 +55,37 @@ describe('Middleware layer', function(){
         done();
       });
     });
+    it('should properly work with nested middleware', function(done){
+      mw.use('all', function(query, change, context, callback){
+        change.one = 1;
+        callback();
+      });
+      mw.use('read', function(query, change, context, callback){
+        change.two = 2;
+        callback();
+      });
+      mw.use('create', function(query, change, context, callback){
+        change.three = 3;
+        callback();
+      });
+      var change = {};
+      mw.run('all', {}, [{}, change, {}], function(err){
+        should.not.exist(err);
+        (change.one).should.equal(1);
+        mw.run('read', {}, [{}, change, {}], function(err){
+          should.not.exist(err);
+          (change.one).should.equal(1);
+          (change.two).should.equal(2);
+          mw.run('create', {}, [{}, change, {}], function(err){
+            should.not.exist(err);
+            (change.one).should.equal(1);
+            (change.two).should.equal(2);
+            (change.three).should.equal(3);
+            done();
+          });
+        });
+      });
+    });
   });
   describe('middleware in action', function(){
     var connection;

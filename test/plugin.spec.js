@@ -126,6 +126,20 @@ describe('REST plugin', function(){
           done();
         });
       });
+      it('should return _ids for nested documents', function(done){
+        var query = {
+          find: {
+            str: 'one'
+          },
+          acl: acl
+        };
+        model.rest_read(query, [], function(err, docs){
+          should.not.exist(err);
+          should.exist(docs[0].embedded[0]._id);
+          done();
+        });
+      });
+
       describe('commands', function(){
         it('should have working $regex port', function(done){
           var q = {};

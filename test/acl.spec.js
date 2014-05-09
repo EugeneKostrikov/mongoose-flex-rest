@@ -160,7 +160,8 @@ describe('Access control', function(){
       //Should have additional keys with acl.read === 1
       (test.indexOf('embedded.array')).should.not.equal(-1);
       (test.indexOf('arrayOfDocs.path')).should.not.equal(-1);
-      (test.length).should.equal(12);
+      (test.indexOf('arrayOfDocs')).should.not.equal(-1);
+      (test.length).should.equal(13);
       done();
     });
     it('should validate selected paths', function(done){
@@ -303,6 +304,7 @@ describe('Access control', function(){
       (map.all.indexOf('embedded.path')).should.not.equal(-1);
       (map.all.indexOf('arrayOfDocs.path')).should.not.equal(-1);
       (map.all.indexOf('aclIsNotDefined')).should.not.equal(-1);
+      (map.all.indexOf('arrayOfDocs')).should.not.equal(-1);
       done();
     });
     it('should fail to apply defaults if acl is defined partially', function(done){
@@ -326,7 +328,12 @@ describe('Access control', function(){
       (map.paths.$4.delete.indexOf('virtual.path')).should.not.equal(-1);
       done();
     });
-    //TODO allow to set acl for virtuals
+    it('should add primary array paths to the major access key', function(done){
+      var map = accessControl.createRules(schema, {read: 0, create: 0, update: 0, delete: 0});
+      (map.paths.$1.read.indexOf('arrayOfDocs')).should.not.equal(-1);
+      (map.paths.$3.update.indexOf('arrayOfDocs')).should.not.equal(-1);
+      done();
+    });
   });
   describe('performance', function(){
     it('complex read parsing', function(){

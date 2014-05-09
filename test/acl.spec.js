@@ -334,6 +334,21 @@ describe('Access control', function(){
       (map.paths.$3.update.indexOf('arrayOfDocs')).should.not.equal(-1);
       done();
     });
+    describe('nested schemas', function(){
+      it('should unwrap nested schemas', function(done){
+        var child = new Schema({
+          path: {type: String}
+        });
+        var parent = new Schema({
+          path: {type: String},
+          children: [child]
+        });
+        var map = accessControl.createRules(parent, {read: 0, update: 0, create: 0, delete: 0});
+        (map.paths.$0.read.indexOf('children')).should.not.equal(-1);
+        (map.all.indexOf('children')).should.not.equal(-1);
+        done();
+      });
+    });
   });
   describe('performance', function(){
     it('complex read parsing', function(){

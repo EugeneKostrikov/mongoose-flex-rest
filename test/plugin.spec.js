@@ -469,6 +469,25 @@ describe('REST plugin', function(){
             done();
           });
         });
+        it('$pull and $push should be able to work together', function(done){
+          var q = {
+            acl: acl
+          };
+          var cmd = {
+            _$pull: {
+              arr: [1,2,3,4]
+            },
+            _$push: {
+              arr: [5,6,7,8]
+            }
+          };
+          model.rest_update(q, cmd, [], function(err, updated){
+            should.not.exist(err);
+            (updated[0].arr.length).should.equal(4);
+            (updated[0].arr[0]).should.equal(5);
+            done();
+          });
+        });
         it('should have working $addToSet method', function(done){
           var q = {
             acl: acl

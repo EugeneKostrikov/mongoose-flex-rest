@@ -15,7 +15,7 @@ describe('Module parsers', function(){
     it('should count $regex queries', function(done){
       var q = {
         path: {
-          _$regex: {
+          $regex: {
             val: 'something',
             options: 'i'
           }
@@ -27,10 +27,10 @@ describe('Module parsers', function(){
     });
     it('should count logical (and, or, not, nor) queries', function(done){
       var q = {
-        _$or: [
+        $or: [
           {path: 'value'},
           {path: 'another value'},
-          {_$and: [
+          {$and: [
             {hello: 'world'},
             {hola: 'mundo'}
           ]}
@@ -42,8 +42,8 @@ describe('Module parsers', function(){
     });
     it('should count comparison operators', function(done){
       var q = {
-        path: {_$gte: 10},
-        another: {_$ne: 'value'}
+        path: {$gte: 10},
+        another: {$ne: 'value'}
       };
       var parsed = parser.query(q);
       (parser.difficulty.comparison).should.equal(2);
@@ -55,38 +55,28 @@ describe('Module parsers', function(){
     beforeEach(function(){
       sampleQuery = {
         title: {
-          _$regex: {
+          $regex: {
             val: 'Str',
             options: 'igm'
           }
         },
         embedded:{
           array: {
-            _$in: ["array", "of", "items"]
+            $in: ["array", "of", "items"]
           }
         },
         array:{
-          _id: mongoose.Types.ObjectId()
+          id: mongoose.Types.ObjectId()
         },
         score: {
-          _$gt: 3,
-          _$lte: 10
+          $gt: 3,
+          $lte: 10
         },
         date: {
-          _$dgte: '03-05-2014',
-          _$dlt: '05-09-2014'
+          $dgte: '03-05-2014',
+          $dlt: '05-09-2014'
         }
       };
-    });
-    it('should rewrite all _$ in a plain query', function(){
-      var q = parsers.query(sampleQuery);
-      iterate(q);
-      function iterate(obj){
-        _.each(obj, function(item, key){
-          (/^_\$.+/.test(key)).should.not.be.ok;
-          if (_.isObject(item)) iterate(item);
-        });
-      }
     });
     it('should have valid query for mongoose when rewritten', function(){
       var q = parsers.query(sampleQuery);
@@ -98,13 +88,13 @@ describe('Module parsers', function(){
     });
     it('should properly rewrite complex queries', function(done){
       var query = {
-        _$or: [{
+        $or: [{
           field: {
-            _$exists: false
+            $exists: false
           }
         },{
           path: {
-            _$size: 10
+            $size: 10
           }
         }]
       };
@@ -118,9 +108,9 @@ describe('Module parsers', function(){
     it('should properly rewrite $regex nested to $elemMatch', function(done){
       var query = {
         array: {
-          _$elemMatch: {
+          $elemMatch: {
             path: {
-              _$regex:{
+              $regex:{
                 val: 'some',
                 options: 'i'
               }
@@ -177,7 +167,7 @@ describe('Module parsers', function(){
       it('should update multiple paths when specified as top-level key' +
         ' and value is an object leaving _id and __v untouched', function(){
         var cmd = {
-          _$set: {
+          $set: {
             _id: 'i should exist to overwrite',
             title: 'I\'ve been flushed :(',
             score: 100
@@ -190,7 +180,7 @@ describe('Module parsers', function(){
       });
       it('should work correctly with embedded objects', function(){
         var cmd = {
-          _$set:{
+          $set:{
             embedded: {
               title: 'Hola!',
               array: ['i', 'am', 'not', 'empty']
@@ -211,7 +201,7 @@ describe('Module parsers', function(){
     describe('$inc', function(){
       it('should work :) on any level', function(){
         var cmd = {
-          _$inc: {
+          $inc: {
             score: 10,
             embedded: {
               number: 1
@@ -228,7 +218,7 @@ describe('Module parsers', function(){
     describe('$push - should properly pushed to', function(){
       it('top-level array of values', function(){
         var cmd = {
-          _$push: {
+          $push: {
             arrayOfValues: ['push', 'all']
           }
         };
@@ -239,7 +229,7 @@ describe('Module parsers', function(){
       });
       it('top-level array of documents', function(){
         var cmd = {
-          _$push: {
+          $push: {
             array:[{
               type: 'pushed', of: 'something'
             }]
@@ -251,7 +241,7 @@ describe('Module parsers', function(){
       });
       it('an array nested to embedded document', function(){
         var cmd = {
-          _$push: {
+          $push: {
             embedded:{
               array: ['four']
             }
@@ -263,7 +253,7 @@ describe('Module parsers', function(){
       });
       it('an array inside of array of documents', function(){
         var cmd = {
-          _$push: {
+          $push: {
             array:{
               _$where_: {
                 type: 'nested'
@@ -284,7 +274,7 @@ describe('Module parsers', function(){
     describe('$pull', function(){
       it('should work with plain array regardless how deep it is nested', function(){
         var cmd = {
-          _$pull:{
+          $pull:{
             embedded:{
               array: ['one']
             },
@@ -305,7 +295,7 @@ describe('Module parsers', function(){
       });
       it('should work properly with array of objects regardless how deep it is nested', function(){
         var cmd = {
-          _$pull:{
+          $pull:{
             array:{
               _$where_:{
                 type: 'another'
@@ -320,7 +310,7 @@ describe('Module parsers', function(){
     describe('$addToSet', function(){
       it('should work with plain arrays', function(){
         var cmd = {
-          _$addToSet:{
+          $addToSet:{
             embedded: {
               array: ['one', 'two', 'three', 'four']
             },
@@ -340,7 +330,7 @@ describe('Module parsers', function(){
       });
       it('should work with array of documents only when proper _id is provided', function(){
         var cmd = {
-          _$addToSet:{
+          $addToSet:{
             array:[
               {type: 'nested', of: 'document', array: ['one']}
             ]
@@ -350,7 +340,7 @@ describe('Module parsers', function(){
         //Assert doc has been pushed
         (doc.array.length).should.equal(3);
         cmd = {
-          _$addToSet: {
+          $addToSet: {
             array:[
               doc.array[0]
             ]
@@ -408,26 +398,26 @@ describe('Module parsers', function(){
       beforeEach(function(){
         sampleQuery = {
           title: {
-            _$regex: {
+            $regex: {
               val: 'Str',
               options: 'igm'
             }
           },
           embedded:{
             array: {
-              _$in: ["array", "of", "items"]
+              $in: ["array", "of", "items"]
             }
           },
           array:{
             _id: 'SomeObjectId'
           },
           score: {
-            _$gt: 3,
-            _$lte: 10
+            $gt: 3,
+            $lte: 10
           },
           date: {
-            _$dgte: '03-05-2014',
-            _$dlt: '05-09-2014'
+            $dgte: '03-05-2014',
+            $dlt: '05-09-2014'
           }
         };
       });

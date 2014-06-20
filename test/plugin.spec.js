@@ -145,7 +145,7 @@ describe('REST plugin', function(){
           var q = {};
           q.find = {
             str: {
-              _$regex: {
+              $regex: {
                 val: 'e',
                 options: 'i'
               }
@@ -174,8 +174,8 @@ describe('REST plugin', function(){
           var q = {};
           q.find = {
             date: {
-              _$dgte: 1,
-              _$lte: 2
+              $dgte: 1,
+              $lte: 2
             }
           };
           q.acl = acl;
@@ -204,7 +204,7 @@ describe('REST plugin', function(){
           var q = {};
           q.find = {
             arr: {
-              _$all: [1,2]
+              $all: [1,2]
             }
           };
           q.acl = acl;
@@ -218,7 +218,7 @@ describe('REST plugin', function(){
           var q = {};
           q.find = {
             arr: {
-              _$size: 3
+              $size: 3
             }
           };
           q.acl = acl;
@@ -232,7 +232,7 @@ describe('REST plugin', function(){
           var q = {};
           q.find = {
             embedded: {
-              _$elemMatch: {
+              $elemMatch: {
                 title: 'first'
               }
             }
@@ -248,9 +248,9 @@ describe('REST plugin', function(){
           var q = {};
           q.find = {
             embedded: {
-              _$elemMatch:{
+              $elemMatch:{
                 title: {
-                  _$regex: {
+                  $regex: {
                     val: 'fir',
                     options: 'i'
                   }
@@ -341,7 +341,7 @@ describe('REST plugin', function(){
       describe('general methods', function(){
         it('should have working $set method', function(done){
           var cmd = {
-            _$set: {
+            $set: {
               str: 'changed',
               arrayOfStrings: ['erased']
             }
@@ -359,7 +359,7 @@ describe('REST plugin', function(){
         });
         it('$set should work with embedded documents', function(done){
           var cmd = {
-            _$set:{
+            $set:{
               embedded: {
                 _$where_: {
                   title: 'first'
@@ -381,7 +381,7 @@ describe('REST plugin', function(){
       describe('working with numbers', function(){
         it('should have $inc working', function(done){
           var cmd = {
-            _$inc: {
+            $inc: {
               num: 1
             }
           };
@@ -394,7 +394,7 @@ describe('REST plugin', function(){
 
         it('$inc should work with arrays', function(done){
           var cmd = {
-            _$inc:{
+            $inc:{
               arr:{
                 _$index_: 0,
                 _$do_: 2
@@ -409,7 +409,7 @@ describe('REST plugin', function(){
         });
         it('$inc should work with arrays of documents', function(done){
           var cmd = {
-            _$inc:{
+            $inc:{
               embedded:{
                 _$where_:{
                   title: 'first'
@@ -434,7 +434,7 @@ describe('REST plugin', function(){
             acl: acl
           };
           var cmd = {
-            _$push: {
+            $push: {
               arr: [2,3,4],
               embedded:{
                 _$where_:{
@@ -459,7 +459,7 @@ describe('REST plugin', function(){
             acl: acl
           };
           var cmd = {
-            _$push: {
+            $push: {
               arr: [2,3,4]
             }
           };
@@ -474,10 +474,10 @@ describe('REST plugin', function(){
             acl: acl
           };
           var cmd = {
-            _$pull: {
+            $pull: {
               arr: [1,2,3,4]
             },
-            _$push: {
+            $push: {
               arr: [5,6,7,8]
             }
           };
@@ -493,7 +493,7 @@ describe('REST plugin', function(){
             acl: acl
           };
           var cmd = {
-            _$addToSet:{
+            $addToSet:{
               arr: [1,2]
             }
           };
@@ -503,9 +503,9 @@ describe('REST plugin', function(){
             done();
           });
         });
-        it('_$addToSet should work with embedded documents', function(done){
+        it('$addToSet should work with embedded documents', function(done){
           var cmd = {
-            _$addToSet:{
+            $addToSet:{
               embedded:{
                 _$where_:{
                   title: 'first'
@@ -524,7 +524,7 @@ describe('REST plugin', function(){
         });
         it('should have working $pull method', function(done){
           var cmd = {
-            _$pull:{
+            $pull:{
               arr: [1]
             }
           };
@@ -536,7 +536,7 @@ describe('REST plugin', function(){
         });
         it('$pullAll method using array syntax', function(done){
           var cmd = {
-            _$pull:{
+            $pull:{
               arrayOfStrings: ['one', 'two']
             }
           };
@@ -549,7 +549,7 @@ describe('REST plugin', function(){
         });
         it('bugfix prove: string is pushed once', function(done){
           var cmd = {
-            _$push:{
+            $push:{
               arrayOfStrings: ['string']
             }
           };

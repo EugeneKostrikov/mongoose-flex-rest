@@ -214,7 +214,7 @@ describe('Access control', function(){
       acl.update = 0;
       acl.read = 1;
       var cmd = {
-        _$push:{
+        $push:{
           arrayOfDocs: [{
             path: 'something',
             array: ['i', 'am', 'not', 'empty']
@@ -229,7 +229,7 @@ describe('Access control', function(){
     });
     it('should be able to $set nested array', function(done){
       var cmd = {
-        _$set: {
+        $set: {
           arrayOfDocs: [{
             _id: new mongoose.Types.ObjectId().toString(),
             path: 'something',

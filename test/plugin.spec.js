@@ -1,5 +1,4 @@
 var plugin = require('../lib/plugin');
-var expect = require('chai').expect;
 var should = require('should');
 var async = require('async');
 
@@ -69,36 +68,57 @@ describe('REST plugin', function(){
         }],
         ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, update: 0}}
       }, {collection: 'test_instances'});
-      schema.plugin(plugin, {acl: {create: 0, delete: 1}});
+      schema.plugin(plugin, {acl: {create: 1, delete: 1}});
       model = connection.model('model', schema);
       done();
     });
     describe('create', function(){
-      it('has nothing to test', function(done){
-        done();
+      it('should be able to create documents', function(done){
+        model.rest_create({str: 'string'}, {create: 1}, [], function(err, doc){
+          should.not.exist(err);
+          should.exist(doc);
+          done();
+        });
+      });
+      it('should set access level to zero when it is not specified', function(done){
+        model.rest_create({str: 'string'}, null, [], function(err, doc){
+          (err.message).should.equal('Access denied: create');
+          should.not.exist(doc);
+          done();
+        });
+      });
+      it('should validate provided accessLevel', function(done){
+        model.rest_create({str: 'string'}, {create: 0}, [], function(err, doc){
+          (err.message).should.equal('Access denied: create');
+          should.not.exist(doc);
+          done();
+        });
       });
     });
     describe('read', function(){
       before(function(done){
         loadSomeData(done);
       });
-      it('should return query if no callback passed', function(done){
-        var promise = model.rest_read({}, {acl: acl});
-        should.exist(promise.exec);
+      it('should require to pass a callback', function(done){
+        (function(){
+          model.rest_read({});
+        }).should.throw('Callback required');
         done();
       });
       it('should execute when provided with a callback', function(done){
-        model.rest_read({}, {acl: acl}, function(err, results){
+        model.rest_read({acl: acl}, [], function(err, results){
           should.not.exist(err);
           should.exist(results);
           done();
         });
       });
       it('should work with simpliest query', function(done){
-        var query = {
+        var query= {};
+        query.find = {
           str: 'one'
         };
-        model.rest_read(query, {acl: acl}, function(err, docs){
+        query.acl = acl;
+        model.rest_read(query, [], function(err, docs){
           should.not.exist(err);
           docs.should.be.an.Array;
           (docs.length).should.equal(1);
@@ -106,52 +126,74 @@ describe('REST plugin', function(){
           done();
         });
       });
+      it('should return _ids for nested documents', function(done){
+        var query = {
+          find: {
+            str: 'one'
+          },
+          acl: acl
+        };
+        model.rest_read(query, [], function(err, docs){
+          should.not.exist(err);
+          should.exist(docs[0].embedded[0]._id);
+          done();
+        });
+      });
+
       describe('commands', function(){
         it('should have working $regex port', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             str: {
-              _$regex: {
+              $regex: {
                 val: 'e',
                 options: 'i'
               }
             }
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = {read: 0};
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(2);
             done();
           });
         });
         it('should work with dates', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             date: 1
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = {read: 0};
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
           });
         });
         it('should work with dates ranges', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             date: {
-              _$dgte: 1,
-              _$lte: 2
+              $dgte: 1,
+              $lte: 2
             }
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = acl;
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(2);
             done();
           });
         });
         it('should work with objects', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             obj: {
               one: 'one'
             }
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = acl;
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);
             (docs[0].obj.one).should.equal('one');
             (docs.length).should.equal(1);
@@ -159,49 +201,56 @@ describe('REST plugin', function(){
           });
         });
         it('should work with arrays', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             arr: {
-              _$all: [1,2]
+              $all: [1,2]
             }
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = acl;
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);  
             (docs.length).should.equal(2);
             done();
           });
         });
         it('should have $size port', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             arr: {
-              _$size: 3
+              $size: 3
             }
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = acl;
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
           });
         });
         it('should have $elemMatch port', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             embedded: {
-              _$elemMatch: {
+              $elemMatch: {
                 title: 'first'
               }
             }
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = acl;
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
           });
         });
         it('should work with $regex nested to $elemMatch', function(done){
-          var q = {
+          var q = {};
+          q.find = {
             embedded: {
-              _$elemMatch:{
+              $elemMatch:{
                 title: {
-                  _$regex: {
+                  $regex: {
                     val: 'fir',
                     options: 'i'
                   }
@@ -209,7 +258,8 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_read(q, {acl: acl}, function(err, docs){
+          q.acl = acl;
+          model.rest_read(q, [], function(err, docs){
             should.not.exist(err);
             (docs.length).should.equal(1);
             done();
@@ -291,12 +341,12 @@ describe('REST plugin', function(){
       describe('general methods', function(){
         it('should have working $set method', function(done){
           var cmd = {
-            _$set: {
+            $set: {
               str: 'changed',
               arrayOfStrings: ['erased']
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd.length).should.equal(1);
             (upd[0].str).should.equal('changed');
@@ -309,7 +359,7 @@ describe('REST plugin', function(){
         });
         it('$set should work with embedded documents', function(done){
           var cmd = {
-            _$set:{
+            $set:{
               embedded: {
                 _$where_: {
                   title: 'first'
@@ -320,7 +370,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].embedded[0].array[0]).should.equal(0);
             (upd[0].embedded[0].array.length).should.equal(1);
@@ -331,11 +381,11 @@ describe('REST plugin', function(){
       describe('working with numbers', function(){
         it('should have $inc working', function(done){
           var cmd = {
-            _$inc: {
+            $inc: {
               num: 1
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].num).should.equal(2);
             done();
@@ -344,14 +394,14 @@ describe('REST plugin', function(){
 
         it('$inc should work with arrays', function(done){
           var cmd = {
-            _$inc:{
+            $inc:{
               arr:{
                 _$index_: 0,
                 _$do_: 2
               }
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].arr[0]).should.equal(3);
             done();
@@ -359,7 +409,7 @@ describe('REST plugin', function(){
         });
         it('$inc should work with arrays of documents', function(done){
           var cmd = {
-            _$inc:{
+            $inc:{
               embedded:{
                 _$where_:{
                   title: 'first'
@@ -370,7 +420,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].embedded[0].num).should.equal(3);
             done();
@@ -380,9 +430,11 @@ describe('REST plugin', function(){
       });
       describe('working with arrays', function(){
         it('should have working $push method', function(done){
-          var q = {};
+          var q = {
+            acl: acl
+          };
           var cmd = {
-            _$push: {
+            $push: {
               arr: [2,3,4],
               embedded:{
                 _$where_:{
@@ -394,7 +446,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
+          model.rest_update(q, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(4);
             (updated[0].arr[2]).should.equal(3);
@@ -403,34 +455,57 @@ describe('REST plugin', function(){
           });
         });
         it('$push acts as $pushAll', function(done){
-          var q = {};
+          var q = {
+            acl: acl
+          };
           var cmd = {
-            _$push: {
+            $push: {
               arr: [2,3,4]
             }
           };
-          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
+          model.rest_update(q, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(4);
             done();
           });
         });
-        it('should have working $addToSet method', function(done){
-          var q = {};
+        it('$pull and $push should be able to work together', function(done){
+          var q = {
+            acl: acl
+          };
           var cmd = {
-            _$addToSet:{
+            $pull: {
+              arr: [1,2,3,4]
+            },
+            $push: {
+              arr: [5,6,7,8]
+            }
+          };
+          model.rest_update(q, cmd, [], function(err, updated){
+            should.not.exist(err);
+            (updated[0].arr.length).should.equal(4);
+            (updated[0].arr[0]).should.equal(5);
+            done();
+          });
+        });
+        it('should have working $addToSet method', function(done){
+          var q = {
+            acl: acl
+          };
+          var cmd = {
+            $addToSet:{
               arr: [1,2]
             }
           };
-          model.rest_update(q, cmd, {acl: acl}, function(err, updated){
+          model.rest_update(q, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arr.length).should.equal(2);
             done();
           });
         });
-        it('_$addToSet should work with embedded documents', function(done){
+        it('$addToSet should work with embedded documents', function(done){
           var cmd = {
-            _$addToSet:{
+            $addToSet:{
               embedded:{
                 _$where_:{
                   title: 'first'
@@ -441,7 +516,7 @@ describe('REST plugin', function(){
               }
             }
           };
-          model.rest_update({}, cmd, {acl:acl}, function(err, updated){
+          model.rest_update({acl: acl}, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].embedded[0].array.length).should.equal(2);
             done();
@@ -449,11 +524,11 @@ describe('REST plugin', function(){
         });
         it('should have working $pull method', function(done){
           var cmd = {
-            _$pull:{
+            $pull:{
               arr: [1]
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].arr.length).should.equal(0);
             done();
@@ -461,11 +536,11 @@ describe('REST plugin', function(){
         });
         it('$pullAll method using array syntax', function(done){
           var cmd = {
-            _$pull:{
+            $pull:{
               arrayOfStrings: ['one', 'two']
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, upd){
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
             should.not.exist(err);
             (upd[0].arrayOfStrings.length).should.equal(1);
             (upd[0].arrayOfStrings[0]).should.equal('three');
@@ -474,11 +549,11 @@ describe('REST plugin', function(){
         });
         it('bugfix prove: string is pushed once', function(done){
           var cmd = {
-            _$push:{
+            $push:{
               arrayOfStrings: ['string']
             }
           };
-          model.rest_update({}, cmd, {acl: acl}, function(err, updated){
+          model.rest_update({acl: acl}, cmd, [], function(err, updated){
             should.not.exist(err);
             (updated[0].arrayOfStrings.length).should.equal(4);
             (updated[0].arrayOfStrings[3]).should.equal('string');
@@ -503,8 +578,8 @@ describe('REST plugin', function(){
       it('should deny access if user has not enough acl power', function(done){
         model.findOne({}, function(err, doc){
           should.not.exist(err);
-          model.rest_delete(doc._id.toString(), null, function(err){
-            (err.message).should.equal('Access denied');
+          model.rest_delete({_id: doc._id.toString()}, function(err){
+            (err.message).should.equal('Access denied: delete');
             done();
           });
         });
@@ -512,10 +587,24 @@ describe('REST plugin', function(){
       it('should have working delete method', function(done){
         model.findOne({}, function(err, doc){
           should.not.exist(err);
-          model.rest_delete(doc._id.toString(), {delete: 10}, function(err){
+          var query = {
+            _id: doc._id.toString(),
+            acl: {read: 2, delete: 10}
+          };
+          model.rest_delete(query, function(err){
             should.not.exist(err);
             done();
           });
+        });
+      });
+      it('should be able to delete documents by query', function(done){
+        var query = {
+          find: {str: 'some string'},
+          acl: {read: 2, delete: 10}
+        };
+        model.rest_delete(query, function(err){
+          should.not.exist(err);
+          done();
         });
       });
     });
@@ -554,12 +643,12 @@ describe('REST plugin', function(){
       });
     });
     it('should populate by path', function(done){
-      var query = {};
-      var options = {
+      var query = {
+        find: {},
         populate: 'child',
         acl: {read: 2}
       };
-      parentModel.rest_read(query, options, function(err, docs){
+      parentModel.rest_read(query, [], function(err, docs){
         should.not.exist(err);
         (docs.length).should.equal(1);
         (docs[0].child.author).should.equal('test');
@@ -567,14 +656,14 @@ describe('REST plugin', function(){
       });
     });
     it('should be able to select populated paths', function(done){
-      var options = {
+      var query = {
         populate: {
           path: 'child',
           select: 'author'
         },
         acl: {read: 1}
       };
-      parentModel.rest_read({}, options, function(err, docs){
+      parentModel.rest_read(query, [], function(err, docs){
         should.not.exist(err);
         (docs[0].child.author).should.equal('test');
         should.not.exist(docs[0].child.post);
@@ -582,14 +671,14 @@ describe('REST plugin', function(){
       });
     });
     it('should be able to exclude fields from populated object', function(done){
-      var options = {
+      var query = {
         populate: {
           path: 'child',
           select: '-post'
         },
         acl: {read: 1}
       };
-      parentModel.rest_read({}, options, function(err, docs){
+      parentModel.rest_read(query, [], function(err, docs){
         should.not.exist(err);
         (docs[0].child.author).should.equal('test');
         should.not.exist(docs[0].child.post);
@@ -597,24 +686,24 @@ describe('REST plugin', function(){
       })
     });
     it('should fail to query if populated path validation fails', function(done){
-      var options = {
+      var query = {
         populate: {
           path: 'child',
           select: 'author post'
         },
         acl: {read: 1}
       };
-      parentModel.rest_read({}, options, function(err){
+      parentModel.rest_read(query, [], function(err){
         should.exist(err);
         done();
       });
     });
     it('should return allowed fields if populate.select is not defined', function(done){
-      var options = {
+      var query = {
         populate: 'child',
         acl: {read: 1}
       };
-      parentModel.rest_read({}, options, function(err, docs){
+      parentModel.rest_read(query, [], function(err, docs){
         should.not.exist(err);
         should.exist(docs[0].child.author);
         should.not.exist(docs[0].child.post);

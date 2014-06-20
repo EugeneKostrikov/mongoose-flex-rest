@@ -150,17 +150,20 @@ describe('Access control', function(){
       (test.indexOf('arrayOfDocs.array')).should.not.equal(-1);
       (test.indexOf('array')).should.not.equal(-1);
       //has keys with no acl defined and defaulted to 0
+      (test.indexOf('_id')).should.not.equal(-1);
+      (test.indexOf('__v')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefined')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedObject')).should.not.equal(-1);
       (test.indexOf('aclIsNotDefinedArray')).should.not.equal(-1);
-      (test.length).should.equal(9);
+      (test.length).should.equal(11);
       acl.read = 1;
       select = accessControl.getAllowed(acl, model);
       test = select.split(' ');
       //Should have additional keys with acl.read === 1
       (test.indexOf('embedded.array')).should.not.equal(-1);
       (test.indexOf('arrayOfDocs.path')).should.not.equal(-1);
-      (test.length).should.equal(12);
+      (test.indexOf('arrayOfDocs')).should.not.equal(-1);
+      (test.length).should.equal(16);
       done();
     });
     it('should validate selected paths', function(done){
@@ -211,7 +214,7 @@ describe('Access control', function(){
       acl.update = 0;
       acl.read = 1;
       var cmd = {
-        _$push:{
+        $push:{
           arrayOfDocs: [{
             path: 'something',
             array: ['i', 'am', 'not', 'empty']
@@ -226,7 +229,7 @@ describe('Access control', function(){
     });
     it('should be able to $set nested array', function(done){
       var cmd = {
-        _$set: {
+        $set: {
           arrayOfDocs: [{
             _id: new mongoose.Types.ObjectId().toString(),
             path: 'something',
@@ -303,6 +306,7 @@ describe('Access control', function(){
       (map.all.indexOf('embedded.path')).should.not.equal(-1);
       (map.all.indexOf('arrayOfDocs.path')).should.not.equal(-1);
       (map.all.indexOf('aclIsNotDefined')).should.not.equal(-1);
+      (map.all.indexOf('arrayOfDocs')).should.not.equal(-1);
       done();
     });
     it('should fail to apply defaults if acl is defined partially', function(done){
@@ -310,6 +314,69 @@ describe('Access control', function(){
       (map.paths.$1.read.indexOf('partially_defined')).should.not.equal(-1);
       (map.paths.$1.update.indexOf('partially_defined')).should.equal(-1);
       done();
+    });
+    it('should include virtuals', function(done){
+      schema.virtual('virtual.path');
+      var map = accessControl.createRules(schema, {read: 0, create: 0, update: 0, delete: 0});
+      (map.all.indexOf('virtual.path')).should.not.equal(-1);
+      done();
+    });
+    it('should apply default acl for virtual paths', function(done){
+      schema.virtual('virtual.path');
+      var map = accessControl.createRules(schema, {read: 1, create: 2, update: 3, delete: 4});
+      (map.paths.$1.read.indexOf('virtual.path')).should.not.equal(-1);
+      (map.paths.$2.create.indexOf('virtual.path')).should.not.equal(-1);
+      (map.paths.$3.update.indexOf('virtual.path')).should.not.equal(-1);
+      (map.paths.$4.delete.indexOf('virtual.path')).should.not.equal(-1);
+      done();
+    });
+    it('should add primary array paths to the major access key', function(done){
+      var map = accessControl.createRules(schema, {read: 0, create: 0, update: 0, delete: 0});
+      (map.paths.$1.read.indexOf('arrayOfDocs')).should.not.equal(-1);
+      (map.paths.$3.update.indexOf('arrayOfDocs')).should.not.equal(-1);
+      done();
+    });
+    describe('nested schemas', function(){
+      var child, parent;
+      before(function(){
+        child = new Schema({
+          path: {type: String}
+        });
+        parent = new Schema({
+          path: {type: String},
+          children: [child]
+        });
+      });
+      it('should unwrap nested schemas', function(done){
+        var map = accessControl.createRules(parent, {read: 0, update: 0, create: 0, delete: 0});
+        (map.paths.$0.read.indexOf('children')).should.not.equal(-1);
+        (map.all.indexOf('children')).should.not.equal(-1);
+        done();
+      });
+      it('should add _id of nested document as expected path', function(done){
+        var map = accessControl.createRules(parent, {read: 0, update: 0, create: 0, delete: 0});
+        (map.all.indexOf('children._id')).should.not.equal(-1);
+        (map.paths.$0.read.indexOf('children._id')).should.not.equal(-1);
+        done();
+      });
+    });
+    describe('_ids and __vs', function(){
+      it('should index _id and __v with default access level', function(done){
+        var map = accessControl.createRules(schema, {read: 0, update: 0, create: 0, delete: 0});
+        (map.paths.$0.read.indexOf('_id')).should.not.equal(-1);
+        (map.all.indexOf('_id')).should.not.equal(-1);
+        (map.paths.$0.read.indexOf('__v')).should.not.equal(-1);
+        (map.all.indexOf('__v')).should.not.equal(-1);
+        done();
+      });
+      it('should include _id and __v with getAllowed method', function(done){
+        var paths = accessControl.getAllowed({read: 0}, model);
+        (paths.indexOf('_id')).should.not.equal(-1);
+        (paths.indexOf('__v')).should.not.equal(-1);
+        var extendedPaths = accessControl.getAllowed({read: 1}, model);
+        (extendedPaths.indexOf('arrayOfDocs._id')).should.not.equal(-1);
+        done();
+      });
     });
   });
   describe('performance', function(){

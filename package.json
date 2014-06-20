@@ -1,13 +1,13 @@
 {
   "name": "mongoose-flex-rest",
-  "version": "0.1.6",
+  "version": "1.0.3",
   "description": "REST plugin with rich query support",
   "main": "index.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,6 @@
     "mongoose": "~3.8.*"
   },
   "devDependencies": {
-    "chai": "~1.9.0",
     "mocha": "~1.17.1",
     "should": "~3.1.3"
   }

@@ -618,7 +618,13 @@ describe('REST plugin', function(){
     before(function(done){
       parentSchema = new Schema({
         title: {type: String},
-        child: {type: Schema.Types.ObjectId, ref: 'childModel'}
+        child: {type: Schema.Types.ObjectId, ref: 'childModel'},
+        obj: {
+          ref: {type: Schema.Types.ObjectId, ref: 'childModel'}
+        },
+        arr: [{
+          ref: {type: Schema.Types.ObjectId, ref: 'childModel'}
+        }]
       }, {collection: 'parentInstances'});
       parentSchema.plugin(plugin, {acl: {create: 1, read: 1, update: 1, delete: 1}});
       parentModel = connection.model('parentModel', parentSchema);
@@ -635,7 +641,7 @@ describe('REST plugin', function(){
       var child = new childModel({author: 'test', post: 'test'});
       child.save(function(err, doc){
         should.not.exist(err);
-        var parent = new parentModel({title: 'test', child: doc._id});
+        var parent = new parentModel({title: 'test', child: doc._id, obj:{ref: doc._id}, arr: [{ref: doc._id}]});
         parent.save(function(err){
           should.not.exist(err);
           done();
@@ -707,6 +713,38 @@ describe('REST plugin', function(){
         should.not.exist(err);
         should.exist(docs[0].child.author);
         should.not.exist(docs[0].child.post);
+        done();
+      });
+    });
+    it('should be able to populate paths nested to objects', function(done){
+      var query = {
+        populate: {
+          path: 'obj.ref',
+          select: 'author'
+        },
+        acl: {read: 1}
+      };
+      parentModel.rest_read(query, [], function(err, docs){
+        should.not.exist(err);
+        should.exist(docs[0].obj.ref.author);
+        should.not.exist(docs[0].obj.ref.post);
+        done();
+      });
+    });
+    it('should be able to populate paths nested to array of objects', function(done){
+      var query = {
+        populate: {
+          path: 'arr.ref',
+          select: 'author'
+        },
+        acl: {
+          read: 1
+        }
+      };
+      parentModel.rest_read(query, [], function(err, docs){
+        should.not.exist(err);
+        should.exist(docs[0].arr[0].ref.author);
+        should.not.exist(docs[0].arr[0].ref.post);
         done();
       });
     });

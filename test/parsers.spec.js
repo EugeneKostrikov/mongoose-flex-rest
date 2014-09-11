@@ -123,6 +123,36 @@ describe('Module parsers', function(){
       (parsed.array.$elemMatch.path.$regex).should.be.an.instanceof(RegExp);
       done();
     });
+    it('should drop off $where queries', function(){
+      var query = {
+        array: {
+          $where: {
+            path: {
+              $regex:{
+                val: 'some',
+                options: 'i'
+              }
+            }
+          }
+        },
+        field: {
+          $or: [{
+            $where: 'string',
+            valid: true,
+            $and: [{
+              $where: function(){},
+              valid: true
+            }]
+          }],
+        }
+      };
+      var parsed = parsers.query(query);
+      should.not.exist(parsed.array.$where);
+      should.not.exist(parsed.field.$or[0].$where);
+      should.not.exist(parsed.field.$or[0].$and[0].$where);
+      should.exist(parsed.field.$or[0].valid);
+      should.exist(parsed.field.$or[0].$and[0].valid);
+    });
   });
   describe('update command parser', function(){
     var doc, Model;

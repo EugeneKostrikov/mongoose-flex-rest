@@ -166,6 +166,20 @@ describe('Access control', function(){
       (test.length).should.equal(16);
       done();
     });
+    it('should be able to run optimistic select', function(){
+      var select = 'path embedded.path embedded.array';
+      acl.read = 0;
+      (accessControl.optimisticSelect(select, acl, model)).should.equal('path embedded.path');
+      acl.read = 1;
+      (accessControl.optimisticSelect(select, acl, model)).should.equal('path embedded.path embedded.array');
+    });
+    it('should not make change to initial select string modificators', function(){
+      var select = '+path -embedded.path embedded.array';
+      acl.read = 0;
+      (accessControl.optimisticSelect(select, acl, model)).should.equal('+path -embedded.path');
+      acl.read = 1;
+      (accessControl.optimisticSelect(select, acl, model)).should.equal('+path -embedded.path embedded.array');
+    });
     it('should validate selected paths', function(done){
       var select = 'path embedded.path';
       (accessControl.validateSelect(select, {read: 0}, model)).should.be.ok;
@@ -272,6 +286,22 @@ describe('Access control', function(){
         acl.read = 2;
         accessControl.validatePop(populate, acl, model).should.be.ok;
         done();
+      });
+      it('should apply optimistic select validation', function(){
+        var populate = {
+          path: 'child',
+          select: 'path author comment'
+        };
+        acl.read = 1;
+        accessControl.optimisticPopulate(populate, acl, model).should.eql({
+          path: 'child',
+          select: 'path author'
+        });
+        acl.read = 2;
+        accessControl.optimisticPopulate(populate, acl, model).should.eql({
+          path: 'child',
+          select: 'path author comment'
+        });
       });
     });
   });

@@ -691,16 +691,19 @@ describe('REST plugin', function(){
         done();
       })
     });
-    it('should fail to query if populated path validation fails', function(done){
+    it('should apply optimistic populate parser', function(done){
       var query = {
         populate: {
           path: 'child',
-          select: 'author post'
+          select: 'author post' //post is invalid here
         },
         acl: {read: 1}
       };
-      parentModel.rest_read(query, [], function(err){
-        should.exist(err);
+      parentModel.rest_read(query, [], function(err, result){
+        should.not.exist(err);
+        var doc = result[0];
+        should.exist(doc.child.author);
+        should.not.exist(doc.child.post);
         done();
       });
     });

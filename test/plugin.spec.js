@@ -66,6 +66,7 @@ describe('REST plugin', function(){
           array: [{type: Number, acl: {read: 0, update: 0}}],
           num: {type: Number, acl: {read:0, update: 0}}
         }],
+        fails: {type: Boolean, validate: [function(){return false}]}, //Always fails doc.validate
         ref: {type: Schema.Types.ObjectId, ref: 'model', acl: {read: 0, update: 0}}
       }, {collection: 'test_instances'});
       schema.plugin(plugin, {acl: {create: 1, delete: 1}});
@@ -73,25 +74,41 @@ describe('REST plugin', function(){
       done();
     });
     describe('create', function(){
+      beforeEach(function(done){
+        model.remove({}, function(err){
+          done(err);
+        });
+      });
       it('should be able to create documents', function(done){
-        model.rest_create({str: 'string'}, {create: 1}, [], function(err, doc){
+        model.rest_create([{str: 'string'}], {create: 1}, [], function(err, docs){
           should.not.exist(err);
-          should.exist(doc);
+          docs.length.should.equal(1);
           done();
         });
       });
       it('should set access level to zero when it is not specified', function(done){
-        model.rest_create({str: 'string'}, null, [], function(err, doc){
+        model.rest_create([{str: 'string'}], null, [], function(err, docs){
           (err.message).should.equal('Access denied: create');
-          should.not.exist(doc);
+          should.not.exist(docs);
           done();
         });
       });
       it('should validate provided accessLevel', function(done){
-        model.rest_create({str: 'string'}, {create: 0}, [], function(err, doc){
+        model.rest_create([{str: 'string'}], {create: 0}, [], function(err, docs){
           (err.message).should.equal('Access denied: create');
-          should.not.exist(doc);
+          should.not.exist(docs);
           done();
+        });
+      });
+      it('should validate all inserted documents first and save nothing if single item fails', function(done){
+        model.rest_create([{str: 'valid'}, {str: 'invalid', fails: true}], {create: 1}, [], function(err, docs){
+          should.exist(err);
+          should.not.exist(docs);
+          model.find({}, function(err, found){
+            should.not.exist(err);
+            found.length.should.equal(0);
+            done();
+          });
         });
       });
     });
@@ -209,7 +226,7 @@ describe('REST plugin', function(){
           };
           q.acl = acl;
           model.rest_read(q, [], function(err, docs){
-            should.not.exist(err);  
+            should.not.exist(err);
             (docs.length).should.equal(2);
             done();
           });
@@ -557,6 +574,16 @@ describe('REST plugin', function(){
             should.not.exist(err);
             (updated[0].arrayOfStrings.length).should.equal(4);
             (updated[0].arrayOfStrings[3]).should.equal('string');
+            done();
+          });
+        });
+      });
+      describe('handling validation', function(){
+        it('should apply validation rules to each updated item first and update nothing if validation fails', function(done){
+          var cmd = {$set: {fails: true}};
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
+            should.exist(err);
+            should.not.exist(upd);
             done();
           });
         });

@@ -157,7 +157,7 @@ describe('Middleware layer', function(){
         });
         schema.plugin(plugin.plugin, {});
         var model = connection.model('test', schema);
-        model.rest_create({path: 'something'}, {}, {custom: 'variable'}, function(err){
+        model.rest_create([{path: 'something'}], {}, {custom: 'variable'}, function(err){
           should.not.exist(err);
           called.should.be.ok;
           done();

@@ -111,6 +111,15 @@ describe('REST plugin', function(){
           });
         });
       });
+      it('should rewrite document _ids to id for top-level docs removing _id from everywhere', function(done){
+        model.rest_create([{str: 'xxx', embedded: [{title: 'hola'}]}], {create: 1}, [], function(err, docs){
+          should.not.exist(err);
+          should.not.exist(docs[0]._id);
+          should.exist(docs[0].id);
+          should.not.exist(docs[0].embedded[0]._id);
+          done();
+        });
+      });
     });
     describe('read', function(){
       before(function(done){
@@ -143,7 +152,7 @@ describe('REST plugin', function(){
           done();
         });
       });
-      it('should return _ids for nested documents', function(done){
+      it('should set id for top-level docs only removing all _ids', function(done){
         var query = {
           find: {
             str: 'one'
@@ -152,7 +161,9 @@ describe('REST plugin', function(){
         };
         model.rest_read(query, [], function(err, docs){
           should.not.exist(err);
-          should.exist(docs[0].embedded[0]._id);
+          should.exist(docs[0].id);
+          should.not.exist(docs[0]._id);
+          should.not.exist(docs[0].embedded[0]._id);
           done();
         });
       });
@@ -391,6 +402,25 @@ describe('REST plugin', function(){
             should.not.exist(err);
             (upd[0].embedded[0].array[0]).should.equal(0);
             (upd[0].embedded[0].array.length).should.equal(1);
+            done();
+          });
+        });
+        it('should rewrite _id to id for top-level documents', function(done){
+          var cmd = {
+            $set: {
+              str: 'changed',
+              arrayOfStrings: ['erased'],
+              embedded: [{
+                title: 'nuked'
+              }]
+            }
+          };
+          model.rest_update({acl: acl}, cmd, [], function(err, upd){
+            should.not.exist(err);
+            (upd.length).should.equal(1);
+            should.exist(upd[0].id);
+            should.not.exist(upd[0]._id);
+            should.not.exist(upd[0].embedded[0]._id);
             done();
           });
         });
@@ -685,6 +715,38 @@ describe('REST plugin', function(){
         should.not.exist(err);
         (docs.length).should.equal(1);
         (docs[0].child.author).should.equal('test');
+        done();
+      });
+    });
+    it('should set populated document id', function(done){
+      var query = {
+        populate: {
+          path: 'child',
+          select: 'author'
+        },
+        acl: {read: 1}
+      };
+      parentModel.rest_read(query, [], function(err, docs){
+        should.not.exist(err);
+        should.exist(docs[0].id);
+        should.not.exist(docs[0]._id);
+        done();
+      });
+    });
+    it('should correctly rewrite _ids for populated array', function(done){
+      var query = {
+        populate: {
+          path: 'arr.ref',
+          select: 'author'
+        },
+        acl: {read: 1}
+      };
+      parentModel.rest_read(query, [], function(err, docs){
+        should.not.exist(err);
+        should.exist(docs[0].id);
+        should.not.exist(docs[0]._id);
+        should.not.exist(docs[0].arr[0]._id);
+        should.exist(docs[0].arr[0].ref.id);
         done();
       });
     });
